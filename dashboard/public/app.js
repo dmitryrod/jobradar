@@ -256,7 +256,7 @@ function openDraftModal(item) {
   const btnApprove = document.createElement('button');
   btnApprove.type = 'button';
   btnApprove.className = 'btn ok';
-  btnApprove.textContent = 'Утвердить';
+  btnApprove.textContent = 'Подходит';
 
   const btnDecline = document.createElement('button');
   btnDecline.type = 'button';
@@ -319,7 +319,11 @@ function openDraftModal(item) {
         method: 'POST',
         body: JSON.stringify({ id: item.id, action: 'approve', text }),
       });
-      showToast('Письмо утверждено', 'good');
+      await api('/api/action', {
+        method: 'POST',
+        body: JSON.stringify({ id: item.id, action: 'approve', reason: '' }),
+      });
+      showToast('Сохранено: подходит', 'good');
       closeDraftModal();
       await load();
     } catch (e) {
@@ -635,11 +639,29 @@ function renderCard(item) {
   }
 
   const cl = item.coverLetter;
+  const applyChatRow = node.querySelector('.apply-chat-row');
+  const pendingTop = node.querySelector('.pending-top-actions');
   const draftBtn = node.querySelector('.cover-draft-btn');
+  const okPendingBtn = node.querySelector('.btn-pending-ok');
   const regenBtn = node.querySelector('.btn-regenerate-letter');
   const viewLetterBtn = node.querySelector('.btn-view-approved');
 
-  if (cl?.status === 'pending' && (cl?.variants || []).length) {
+  const hasLetterDraft =
+    cl?.status === 'pending' && (cl?.variants || []).length;
+
+  if (item.status === 'pending') {
+    applyChatRow.hidden = true;
+    pendingTop.hidden = false;
+  } else {
+    applyChatRow.hidden = false;
+    pendingTop.hidden = true;
+  }
+
+  if (item.status === 'pending' && okPendingBtn) {
+    okPendingBtn.hidden = !hasLetterDraft;
+  }
+
+  if (hasLetterDraft) {
     draftBtn.hidden = false;
     draftBtn.addEventListener('click', () => openDraftModal(item));
   }
@@ -675,7 +697,11 @@ function renderCard(item) {
     });
   }
 
-  if (cl?.status === 'approved' && String(cl?.approvedText || '').trim()) {
+  if (
+    item.status === 'approved' &&
+    cl?.status === 'approved' &&
+    String(cl?.approvedText || '').trim()
+  ) {
     viewLetterBtn.hidden = false;
     viewLetterBtn.addEventListener('click', () => openApprovedLetterModal(item));
   }
@@ -683,7 +709,7 @@ function renderCard(item) {
   const applyChatBtn = node.querySelector('.btn-apply-chat');
   const approvedLetter =
     cl?.status === 'approved' && String(cl?.approvedText || '').trim();
-  if (approvedLetter) {
+  if (item.status !== 'pending' && approvedLetter) {
     applyChatBtn.disabled = false;
     applyChatBtn.removeAttribute('title');
     applyChatBtn.addEventListener('click', async () => {
@@ -714,14 +740,15 @@ function renderCard(item) {
   if (item.status === 'pending') {
     actions.hidden = false;
     const ta = actions.querySelector('.reason');
-    const ok = actions.querySelector('.ok');
+    const ok = pendingTop.querySelector('.btn-pending-ok');
     const bad = actions.querySelector('.bad');
-    const coverBtn = actions.querySelector('.btn-cover');
-    const refreshBtn = actions.querySelector('.btn-refresh-vacancy');
+    const coverBtn = pendingTop.querySelector('.btn-pending-cover');
+    const refreshBtn = pendingTop.querySelector('.btn-refresh-vacancy');
 
     coverBtn.addEventListener('click', async () => {
       coverBtn.disabled = true;
       refreshBtn.disabled = true;
+      if (ok && !ok.hidden) ok.disabled = true;
       try {
         await requestCoverLetterGenerate(item.id, false);
         showToast('Сопроводительное сгенерировано', 'good');
@@ -746,14 +773,14 @@ function renderCard(item) {
       } finally {
         coverBtn.disabled = false;
         refreshBtn.disabled = false;
+        if (ok && !ok.hidden) ok.disabled = false;
       }
     });
 
     refreshBtn.addEventListener('click', async () => {
       refreshBtn.disabled = true;
       coverBtn.disabled = true;
-      ok.disabled = true;
-      bad.disabled = true;
+      if (ok && !ok.hidden) ok.disabled = true;
       try {
         const refreshRes = await api('/api/vacancy/refresh-body', {
           method: 'POST',
@@ -771,13 +798,13 @@ function renderCard(item) {
         alert(e.message);
         refreshBtn.disabled = false;
         coverBtn.disabled = false;
-        ok.disabled = false;
-        bad.disabled = false;
+        if (ok && !ok.hidden) ok.disabled = false;
       }
     });
 
     const send = async (action) => {
-      ok.disabled = bad.disabled = true;
+      if (ok) ok.disabled = true;
+      bad.disabled = true;
       try {
         await api('/api/action', {
           method: 'POST',
@@ -795,7 +822,8 @@ function renderCard(item) {
         await load();
       } catch (e) {
         alert(e.message);
-        ok.disabled = bad.disabled = false;
+        if (ok) ok.disabled = false;
+        bad.disabled = false;
       }
     };
     ok.addEventListener('click', () => send('approve'));

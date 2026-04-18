@@ -1028,7 +1028,7 @@ const server = http.createServer(async (req, res) => {
     const letter = String(rec.coverLetter?.approvedText || '').trim();
     if (!letter) {
       return sendJson(res, 400, {
-        error: 'Нет утверждённого письма — сначала утвердите текст в «Черновик письма»',
+        error: 'Нет сохранённого письма — в «Черновик письма» нажмите «Подходит»',
       });
     }
 

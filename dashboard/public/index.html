@@ -152,36 +152,34 @@
             <p class="risks"></p>
             <div class="tags"></div>
             <div class="apply-chat-row">
-              <button type="button" class="btn btn-apply-chat" disabled title="Сначала утвердите письмо в «Черновик письма»">
+              <button type="button" class="btn btn-apply-chat" disabled title="Сначала нажмите «Подходит» в «Черновик письма»">
                 Отклик в браузере
               </button>
             </div>
-            <button type="button" class="cover-draft-btn" hidden>Черновик письма</button>
+            <div class="pending-top-actions" hidden>
+              <button
+                type="button"
+                class="btn-icon btn-refresh-vacancy"
+                title="Обновить текст вакансии с hh.ru и заново оценить совпадение с CV (OpenRouter)"
+                aria-label="Обновить текст вакансии с hh.ru и заново оценить через OpenRouter"
+              >
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    fill="currentColor"
+                    d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                  />
+                </svg>
+              </button>
+              <button type="button" class="btn btn-cover btn-pending-cover">Создать сопроводительное</button>
+              <button type="button" class="cover-draft-btn" hidden>Черновик письма</button>
+              <button type="button" class="btn ok btn-pending-ok" hidden>Подходит</button>
+            </div>
             <button type="button" class="btn btn-cover btn-regenerate-letter" hidden>Снова сгенерировать письмо</button>
             <button type="button" class="btn btn-view-approved" hidden>Письмо</button>
             <div class="actions" hidden>
-              <textarea class="reason" rows="2" placeholder="Причина (особенно при отклонении)…"></textarea>
-              <div class="actions-toolbar">
-                <div class="actions-toolbar-start">
-                  <button
-                    type="button"
-                    class="btn-icon btn-refresh-vacancy"
-                    title="Обновить текст вакансии с hh.ru и заново оценить совпадение с CV (OpenRouter)"
-                    aria-label="Обновить текст вакансии с hh.ru и заново оценить через OpenRouter"
-                  >
-                    <svg class="btn-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path
-                        fill="currentColor"
-                        d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
-                      />
-                    </svg>
-                  </button>
-                  <button type="button" class="btn btn-cover">Создать сопроводительное</button>
-                </div>
-                <div class="actions-toolbar-end">
-                  <button type="button" class="btn ok">Подходит</button>
-                  <button type="button" class="btn bad">Не подходит</button>
-                </div>
+              <div class="pending-reject-block">
+                <textarea class="reason" rows="2" placeholder="Причина (особенно при отклонении)…"></textarea>
+                <button type="button" class="btn bad">Не подходит</button>
               </div>
             </div>
             <p class="done-reason"></p>
