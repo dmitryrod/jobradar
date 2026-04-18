@@ -1,0 +1,28 @@
+---
+description: При реализации — оцени сложность и выбери workflow
+alwaysApply: true
+---
+
+# Workflow Selection
+
+При запросе на реализацию (добавить, создать, реализовать, сделать) используй skill **workflow-selector**:
+
+1. Оцени задачу по критериям (scaffold / implement / feature)
+2. Выбери соответствующий workflow
+3. Выполни шаги выбранного workflow (вызывай субагентов по порядку)
+
+**Делегирование только через встроенный инструмент Cursor `Task`** (параметры: `subagent_type`, `prompt`, `description`, при необходимости `model`, `readonly`, `run_in_background`). Это **не** MCP-сервер из настроек MCP и не инструмент из папки `mcps/` — отдельные субагенты и отдельный контекст появляются **только** если модель **реально вызывает `Task`**, а не пересказывает роли worker/reviewer в одном ответе.
+
+**Если в сессии нет инструмента `Task`** (например режим Ask, сборка без субагентов, отключённые агентные инструменты) — цепочки из `/norissk` и workflow-команд **не смогут** породить отдельные окна субагентов; кратко опиши пользователю это ограничение. Подробнее: [`.cursor/docs/CREATING_ASSETS.md` § почему Task не вызывается](../docs/CREATING_ASSETS.md#why-task-not-called).
+
+При срабатывании **триггеров** из карты формулировок строй **минимально достаточную** цепочку `Task` по [§ trigger-routing](../docs/CREATING_ASSETS.md#trigger-routing), а не все роли подряд без смысла.
+
+**Никогда не выполняй роли planner, worker, designer, imager, debugger, test-runner, reviewer, documenter, security-auditor, senior-reviewer, marketing, marketing-researcher самостоятельно** — только через `Task`. Запрещённые имена и историческая путаница с MCP — только в [`CREATING_ASSETS.md` → «Инструмент Task»](../docs/CREATING_ASSETS.md#task-delegation).
+
+Если пользователь явно указал команду (`/workflow-scaffold`, `/workflow-implement`, `/workflow-feature`, `/workflow-integrate-skill`, `/norissk`) — следуй ей. Иначе — примени workflow-selector и выбери сам.
+
+**Расширение тулчейна (внешние скиллы / skills.sh):** если задача — подключить пакет из экосистемы, best practices для нового стека в `.cursor/`, а не фича в `app/` — не подменяй это обычным `workflow-implement`; используй команду **`/workflow-integrate-skill`** и скилл [`.cursor/skills/ecosystem-integrator/SKILL.md`](../skills/ecosystem-integrator/SKILL.md). Сырой внешний скилл в репозиторий без адаптации под **`Task`** не добавляй.
+
+**Маркетинговые сценарии:** если результат — маркетинговый deliverable или маркетинговое исследование (copy, CRO-аудит, email sequence, SEO-план, GTM roadmap, positioning, ICP), не отправляй задачу по умолчанию в `worker`. Сначала сверься с [`agent-intent-map.csv`](../docs/agent-intent-map.csv): строки `marketing_tactical` и `marketing_research` должны запускать **`Task(subagent_type="marketing", ...)`** или **`Task(subagent_type="marketing-researcher", ...)`**.
+
+**Автоматизация hh.ru (этот репозиторий):** если запрос про отклики, очередь вакансий, Playwright на hh.ru, скрипты из корневого `package.json`, селекторы `lib/hh-*-selectors.mjs` — исполняющий агент **сначала** читает skill [`.cursor/skills/hh-ru-apply-workflow/SKILL.md`](../skills/hh-ru-apply-workflow/SKILL.md), затем строит цепочку **`Task`** по workflow и строке **`hh_ru_apply`** в [`agent-intent-map.csv`](../docs/agent-intent-map.csv). Не подменяй сценарии маркетингом; не трактуй отсутствие «Отправить» в `hh-fill-letter` как баг.

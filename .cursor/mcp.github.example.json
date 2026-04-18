@@ -1,0 +1,12 @@
+{
+  "comment": "Фрагмент для слияния в пользовательский %USERPROFILE%\\.cursor\\mcp.json внутри ключа mcpServers. GITHUB_PERSONAL_ACCESS_TOKEN не коммитить — только в env хоста или секретах Cursor.",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
+    }
+  }
+}

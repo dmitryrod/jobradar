@@ -1,0 +1,4 @@
+# Установка (опционально): pip install -r .cursor/memory/requirements.txt
+# Без chromadb движок использует SQLite FTS5 (stdlib).
+# На Windows для сборки chroma-hnswlib может понадобиться MSVC Build Tools или Python 3.11–3.12 с готовыми wheels.
+chromadb>=0.5.0,<1.0.0

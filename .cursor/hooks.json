@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [],
+    "subagentStop": [],
+    "sessionEnd": [
+      {
+        "command": "python .cursor/hooks/rag_session_end.py",
+        "timeout": 120,
+        "failClosed": false
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "python .cursor/hooks/rag_before_submit.py",
+        "timeout": 120,
+        "failClosed": false
+      }
+    ]
+  }
+}

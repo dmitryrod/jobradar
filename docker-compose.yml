@@ -1,0 +1,24 @@
+services:
+  dashboard:
+    build: .
+    container_name: hh-ru-apply-dashboard
+    ports:
+      - "3849:3849"
+    volumes:
+      - ./data:/app/data
+      # Не :ro — при старте entrypoint запускает bootstrap и может создать cover-letter.txt из примера.
+      - ./config:/app/config
+      - ./CV:/app/CV:ro
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DASHBOARD_PORT=3849
+      - DASHBOARD_BIND=0.0.0.0
+      # Отключить автозапуск bootstrap в entrypoint: SKIP_BOOTSTRAP=1
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"

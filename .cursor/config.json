@@ -1,0 +1,61 @@
+{
+  "project": {
+    "app": "app",
+    "docs": "app/docs",
+    "comment": "Единственное место где менять пути при переносе проекта."
+  },
+  "documentation": {
+    "paths": {
+      "root": "app/docs",
+      "readme": "app/docs/README.md",
+      "changelog": "app/docs/CHANGELOG.md",
+      "architecture": "app/docs/ARCHITECTURE.md",
+      "contributing": "app/docs/CONTRIBUTING.md",
+      "roadmap": "app/docs/ROADMAP.md",
+      "troubleshooting": "app/docs/troubleshooting.md",
+      "env_example": "app/.env.example",
+      "plans": ".cursor/plans",
+      "reports": ".cursor/reports"
+    },
+    "enabled": {
+      "readme": true,
+      "changelog": true,
+      "architecture": true,
+      "contributing": true,
+      "roadmap": true,
+      "troubleshooting": true,
+      "env_example": true,
+      "plans": true,
+      "reports": true,
+      "issues": false,
+      "features": false,
+      "api": false,
+      "components": false,
+      "design": false
+    },
+    "comment": "Disabled sections не существуют в этом проекте. При добавлении новой документации — включить enabled и задать путь."
+  },
+  "testing": {
+    "command": "npm test",
+    "path": "tests/",
+    "comment": "hh-ru-apply: Node.js unit tests (node --test)."
+  },
+  "metrics": {
+    "sessionsPath": ".cursor/reports",
+    "enabled": true,
+    "comment": "Session reports сохраняются в .cursor/reports/session-*.json. Скрипт: node .cursor/scripts/metrics-report.cjs"
+  },
+  "presentations": {
+    "source": "presentations",
+    "output": "presentations/dist",
+    "comment": "Marp: .md и ассеты в source; pptx/pdf/html из marp CLI — в output (каталог в .gitignore через **/dist/). Если презентационный pipeline ещё не используется, допустимы placeholder-каталоги presentations/ и presentations/dist."
+  },
+  "polza": {
+    "apiKeyEnv": "POLZA_API_KEY",
+    "apiKeyEnvAlternate": "POLZA_AI_API_KEY",
+    "baseUrlEnv": "POLZA_BASE_URL",
+    "baseUrlDefault": "https://polza.ai/api/v1",
+    "modelEnv": "POLZA_MODEL",
+    "comment": "Ключ и модель Polza — только через переменные окружения / app/.env (имена выше), не коммитить секреты."
+  }
+}

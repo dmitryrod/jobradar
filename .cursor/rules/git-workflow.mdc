@@ -1,0 +1,18 @@
+---
+description: Git branching и PR workflow
+alwaysApply: true
+---
+
+# Git Workflow
+
+**Ветки:**
+- `main` / `master` — стабильная
+- `feature/<name>` — новая функциональность
+- `fix/<name>` или `fix/issue-<number>` — исправления
+
+**PR:**
+- Одна ветка — одна логическая задача
+- В body: описание изменений, `Closes #N` или `Fixes #N` для issue
+- Перед merge — тесты зелёные, review пройден
+
+**Merge:** предпочтительно squash или rebase для чистой истории.

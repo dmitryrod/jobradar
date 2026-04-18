@@ -1,0 +1,24 @@
+{
+  "name": "hh-ru-apply",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "test": "node --test tests/paths.test.mjs tests/store.test.mjs tests/score-tooltip-clamp.test.mjs tests/rotate-search-keyword.test.mjs",
+    "login": "node scripts/login.mjs",
+    "apply": "node scripts/apply.mjs",
+    "scan-tg": "node scripts/scan-telegram.mjs",
+    "vacancies": "node scripts/open-vacancies.mjs",
+    "harvest": "node scripts/harvest.mjs",
+    "dashboard": "node scripts/dashboard-server.mjs",
+    "hh-fill-letter": "node scripts/hh-fill-response-letter.mjs",
+    "hh-apply-chat": "node scripts/hh-apply-chat-letter.mjs",
+    "codegen-hh": "node scripts/codegen-hh.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pdf-parse": "^2.4.5",
+    "playwright": "^1.49.0"
+  }
+}

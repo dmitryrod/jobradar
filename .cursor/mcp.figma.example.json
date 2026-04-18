@@ -1,0 +1,8 @@
+{
+  "comment": "Фрагмент для слияния в пользовательский %USERPROFILE%\\.cursor\\mcp.json внутри ключа mcpServers. Секреты не коммитить.",
+  "mcpServers": {
+    "figma": {
+      "url": "https://mcp.figma.com/mcp"
+    }
+  }
+}
