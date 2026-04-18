@@ -7,6 +7,8 @@
  *
  * Переменные: HH_SESSION_LIMIT (или HH_MAX_TOTAL), HH_PER_KEYWORD_LIMIT, HH_OPEN_DELAY_MIN_MS,
  *   HH_OPEN_DELAY_MAX_MS, HH_SEARCH_JITTER_MIN_MS, HH_SEARCH_JITTER_MAX_MS, HH_KEYWORDS_FILE, HH_AREA, HH_HEADLESS
+ *
+ * Остановка: тот же флаг, что у harvest (файл из lib/harvest-graceful-stop.mjs), если создан дашбордом («Остановить поиск»).
  */
 
 import { chromium } from 'playwright';
@@ -14,8 +16,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import readline from 'readline';
-import 'dotenv/config';
+import { loadEnv } from '../lib/load-env.mjs';
+loadEnv();
 import { loadSearchKeywords } from '../lib/load-keywords.mjs';
+import { isHarvestGracefulStopRequested } from '../lib/harvest-graceful-stop.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -48,6 +52,18 @@ function randomIntInclusive(min, max) {
 
 function sleepMs(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function sleepMsInterruptible(ms) {
+  const step = 400;
+  let left = Math.max(0, ms);
+  while (left > 0) {
+    const t = Math.min(step, left);
+    await sleepMs(t);
+    left -= t;
+    if (isHarvestGracefulStopRequested()) return true;
+  }
+  return false;
 }
 
 const keywordsPath = path.resolve(
@@ -138,10 +154,14 @@ async function main() {
 
     for (const key of keywords) {
       if (toOpen.length >= sessionLimit) break;
+      if (isHarvestGracefulStopRequested()) {
+        console.log('Остановка по флагу (как у «Остановить поиск» в дашборде).');
+        break;
+      }
       const url = buildSearchUrl(key);
       console.log('Поиск:', key, '→', url);
       await searchPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await sleepMs(randomIntInclusive(searchJitterMin, searchJitterMax));
+      if (await sleepMsInterruptible(randomIntInclusive(searchJitterMin, searchJitterMax))) break;
       const found = await collectVacancyUrls(searchPage);
       let n = 0;
       for (const v of found) {
@@ -163,17 +183,21 @@ async function main() {
 
     const vacancyPages = [];
     for (let i = 0; i < toOpen.length; i++) {
+      if (isHarvestGracefulStopRequested()) {
+        console.log('Остановка по флагу перед открытием вакансии.');
+        break;
+      }
       const { url, query } = toOpen[i];
       if (i > 0) {
         const pause = randomIntInclusive(openDelayMin, openDelayMax);
         console.log(`Пауза ${pause} мс перед следующей вакансией…`);
-        await sleepMs(pause);
+        if (await sleepMsInterruptible(pause)) break;
       }
       const p = await ctx.newPage();
       vacancyPages.push(p);
       console.log('Открываю:', url, `(запрос: ${query})`);
       await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await sleepMs(randomIntInclusive(postLoadMin, postLoadMax));
+      if (await sleepMsInterruptible(randomIntInclusive(postLoadMin, postLoadMax))) break;
     }
 
     await searchPage.close().catch(() => {});

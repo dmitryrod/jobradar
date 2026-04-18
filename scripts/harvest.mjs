@@ -24,7 +24,16 @@ import { loadEnv } from '../lib/load-env.mjs';
 loadEnv();
 
 import { loadSearchKeywords } from '../lib/load-keywords.mjs';
-import { sessionProfilePath, ROOT, SKIPPED_FILE, DATA_DIR } from '../lib/paths.mjs';
+import {
+  sessionProfilePath,
+  ROOT,
+  SKIPPED_FILE,
+  DATA_DIR,
+} from '../lib/paths.mjs';
+import {
+  isHarvestGracefulStopRequested as isGracefulStopRequested,
+  clearHarvestGracefulStopFlag as clearGracefulStopFlag,
+} from '../lib/harvest-graceful-stop.mjs';
 import { loadPreferences } from '../lib/preferences.mjs';
 import { parseVacancyPage, vacancyIdFromUrl } from '../lib/vacancy-parse.mjs';
 import { runHardFilters } from '../lib/filters.mjs';
@@ -55,6 +64,19 @@ const keywordsPath = path.resolve(
   (process.env.HH_KEYWORDS_FILE || '').trim() || DEFAULT_KEYWORDS_FILE
 );
 
+/** База — preferences.json; HH_REQUIRE_REMOTE=0|1|true|false перекрывает requireRemote на этот запуск. */
+function resolveHarvestPreferences() {
+  const base = loadPreferences();
+  const raw = (process.env.HH_REQUIRE_REMOTE ?? '').trim().toLowerCase();
+  if (raw === '1' || raw === 'true' || raw === 'yes') {
+    return { ...base, requireRemote: true };
+  }
+  if (raw === '0' || raw === 'false' || raw === 'no') {
+    return { ...base, requireRemote: false };
+  }
+  return base;
+}
+
 function parseKeywordsLogic() {
   const raw = (process.env.HH_KEYWORDS_LOGIC || 'cycles').trim().toLowerCase();
   if (raw === 'loop' || raw === 'cycles' || raw === 'keywords') return raw;
@@ -82,11 +104,28 @@ function sleepMs(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Пауза с опросом остановки (чтобы не ждать целиком openDelay / jitter после «Остановить поиск»). */
+async function sleepMsInterruptible(ms, isStop) {
+  const step = 400;
+  let left = Math.max(0, ms);
+  while (left > 0) {
+    const t = Math.min(step, left);
+    await sleepMs(t);
+    left -= t;
+    if (isStop()) return true;
+  }
+  return false;
+}
+
 async function waitForWorkHours() {
   if (process.env.HH_WORK_HOURS_ENABLED !== '1') return;
   while (!isWithinWorkHoursNow(process.env)) {
     harvestEvent({ event: 'idle_work_hours', message: 'Вне интервала рабочего времени, ожидание…' });
-    await sleepMs(60_000);
+    for (let i = 0; i < 12; i++) {
+      await sleepMs(5000);
+      if (isWithinWorkHoursNow(process.env)) return;
+      if (isGracefulStopRequested()) return;
+    }
   }
 }
 
@@ -143,20 +182,32 @@ function harvestEvent(obj) {
 
 /**
  * Один проход: сбор URL по ключам → обход карточек.
- * @returns {{ shouldRotate: boolean, added: number, urlsTotal: number }}
+ * @returns {{ shouldRotate: boolean, added: number, urlsTotal: number, gracefulStop: boolean }}
  */
 async function runHarvestPass(page, keywords, cvBundle, prefs) {
   await waitForWorkHours();
+  if (isGracefulStopRequested()) {
+    harvestEvent({ event: 'done', added: 0, urlsTotal: 0, gracefulStop: true });
+    return { shouldRotate: false, added: 0, urlsTotal: 0, gracefulStop: true };
+  }
   const seenIds = knownVacancyIds();
   const urls = [];
   const globalSeen = new Set();
+  let stopAfterKeywords = false;
 
   for (const key of keywords) {
     await waitForWorkHours();
     if (urls.length >= sessionLimit) break;
+    if (isGracefulStopRequested()) {
+      stopAfterKeywords = true;
+      break;
+    }
     harvestEvent({ event: 'keyword_active', keyword: key, phase: 'search' });
     await page.goto(buildSearchUrl(key), { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await sleepMs(randomIntInclusive(searchJitterMin, searchJitterMax));
+    if (await sleepMsInterruptible(randomIntInclusive(searchJitterMin, searchJitterMax), isGracefulStopRequested)) {
+      stopAfterKeywords = true;
+      break;
+    }
     const found = await collectVacancyUrls(page);
     let n = 0;
     for (const u of found) {
@@ -171,21 +222,34 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
     }
     console.log(`Ключ «${key}»: +${n} URL (в очереди на обход ${urls.length})`);
     harvestEvent({ event: 'keyword_done', keyword: key });
+    if (isGracefulStopRequested()) {
+      stopAfterKeywords = true;
+      break;
+    }
   }
 
   if (!urls.length) {
     console.log('Нет новых ссылок (все уже в очереди или пустая выдача).');
-    harvestEvent({ event: 'done', added: 0, urlsTotal: 0 });
-    return { shouldRotate: true, added: 0, urlsTotal: 0 };
+    const gracefulStop = stopAfterKeywords;
+    harvestEvent({ event: 'done', added: 0, urlsTotal: 0, gracefulStop });
+    return { shouldRotate: !gracefulStop, added: 0, urlsTotal: 0, gracefulStop };
   }
 
   let added = 0;
+  let stoppedCardsEarly = false;
   for (let i = 0; i < urls.length; i++) {
     await waitForWorkHours();
+    if (isGracefulStopRequested()) {
+      stoppedCardsEarly = true;
+      break;
+    }
     if (i > 0) {
       const pause = randomIntInclusive(openDelayMin, openDelayMax);
       console.log(`Пауза ${pause} мс…`);
-      await sleepMs(pause);
+      if (await sleepMsInterruptible(pause, isGracefulStopRequested)) {
+        stoppedCardsEarly = true;
+        break;
+      }
     }
 
     const { url, query } = urls[i];
@@ -194,8 +258,15 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
 
     harvestEvent({ event: 'keyword_active', keyword: query, phase: 'card' });
     harvestEvent({ event: 'url_opened', url, vacancyId });
+    if (isGracefulStopRequested()) {
+      stoppedCardsEarly = true;
+      break;
+    }
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await sleepMs(randomIntInclusive(postLoadMin, postLoadMax));
+    if (await sleepMsInterruptible(randomIntInclusive(postLoadMin, postLoadMax), isGracefulStopRequested)) {
+      stoppedCardsEarly = true;
+      break;
+    }
     const parsed = await parseVacancyPage(page);
 
     const filter = runHardFilters(parsed, prefs);
@@ -209,6 +280,10 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
         reason: filter.reason,
         title: parsed.title,
       });
+      if (isGracefulStopRequested()) {
+        stoppedCardsEarly = true;
+        break;
+      }
       continue;
     }
 
@@ -225,6 +300,10 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
     };
 
     if (!skipLlm) {
+      if (isGracefulStopRequested()) {
+        stoppedCardsEarly = true;
+        break;
+      }
       try {
         llm = await scoreVacancyWithOpenRouter(
           {
@@ -233,6 +312,9 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
             salaryRaw: parsed.salaryRaw,
             description: parsed.description,
             url,
+            address: parsed.address || '',
+            workConditionsLines: Array.isArray(parsed.workConditionsLines) ? parsed.workConditionsLines : [],
+            employment: parsed.employment || '',
           },
           cvBundle,
           prefs
@@ -265,7 +347,13 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
       openRouterModel: llm.providerModel || null,
       scoreVacancy: llm.scoreVacancy,
       scoreCvMatch: llm.scoreCvMatch,
+      scoreWorkFormat: llm.scoreWorkFormat,
+      scoreLocation: llm.scoreLocation,
       scoreOverall: llm.scoreOverall,
+      scoreSortKey: llm.scoreSortKey,
+      scoreBlendedBeforeDelta: llm.scoreBlendedBeforeDelta,
+      scoreRuleDelta: llm.scoreRuleDelta,
+      scoreSalaryDelta: llm.scoreSalaryDelta,
       geminiScore: llm.scoreOverall ?? llm.score,
       geminiSummary: llm.summary,
       geminiRisks: llm.risks,
@@ -284,11 +372,21 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
     } else {
       console.log('  → Уже была в очереди, пропуск');
     }
+
+    if (isGracefulStopRequested()) {
+      stoppedCardsEarly = true;
+      break;
+    }
   }
 
-  harvestEvent({ event: 'done', added, urlsTotal: urls.length });
-  console.log(`\nПроход завершён. Новых записей в очереди: ${added}.`);
-  return { shouldRotate: true, added, urlsTotal: urls.length };
+  const gracefulStop = stopAfterKeywords || stoppedCardsEarly;
+  harvestEvent({ event: 'done', added, urlsTotal: urls.length, gracefulStop });
+  if (gracefulStop) {
+    console.log(`\nОстановка по запросу. Новых записей в очереди за проход: ${added}.`);
+  } else {
+    console.log(`\nПроход завершён. Новых записей в очереди: ${added}.`);
+  }
+  return { shouldRotate: !gracefulStop, added, urlsTotal: urls.length, gracefulStop };
 }
 
 function rotateIfEnabled() {
@@ -306,7 +404,7 @@ function rotateIfEnabled() {
 }
 
 async function main() {
-  const prefs = loadPreferences();
+  const prefs = resolveHarvestPreferences();
   const logic = parseKeywordsLogic();
 
   if (!skipLlm && !hasLlmApiKey()) {
@@ -332,6 +430,8 @@ async function main() {
     process.exit(1);
   }
 
+  clearGracefulStopFlag();
+
   const ctx = await chromium.launchPersistentContext(sessionProfilePath(), {
     headless,
     viewport: { width: 1280, height: 800 },
@@ -348,11 +448,14 @@ async function main() {
     }
 
     if (logic === 'loop') {
-      console.log('Режим ключей: зацикливание (остановка — завершите процесс harvest).');
+      console.log(
+        'Режим ключей: зацикливание (остановка — «Остановить поиск» в дашборде или завершите процесс harvest).'
+      );
       let pass = 0;
       while (true) {
         pass++;
         await waitForWorkHours();
+        if (isGracefulStopRequested()) break;
         const all = loadSearchKeywords(keywordsPath);
         if (!all.length) {
           console.error('Нет ключей в', keywordsPath);
@@ -360,6 +463,7 @@ async function main() {
         }
         harvestEvent({ event: 'pass_start', pass, logic: 'loop', keywordsTotal: all.length });
         const r = await runHarvestPass(page, all, cvBundle, prefs);
+        if (r.gracefulStop) break;
         if (r.shouldRotate) rotateIfEnabled();
       }
     }
@@ -369,6 +473,7 @@ async function main() {
       console.log(`Режим ключей: ${cyclesLeft} проход(ов) по полному списку ключей.`);
       for (let pass = 1; pass <= cyclesLeft; pass++) {
         await waitForWorkHours();
+        if (isGracefulStopRequested()) break;
         const all = loadSearchKeywords(keywordsPath);
         if (!all.length) {
           console.error('Нет ключей в', keywordsPath);
@@ -376,6 +481,7 @@ async function main() {
         }
         harvestEvent({ event: 'pass_start', pass, logic: 'cycles', passTotal: cyclesLeft, keywordsTotal: all.length });
         const r = await runHarvestPass(page, all, cvBundle, prefs);
+        if (r.gracefulStop) break;
         if (r.shouldRotate) rotateIfEnabled();
       }
       console.log('Готово. Запустите: npm run dashboard');
@@ -396,6 +502,7 @@ async function main() {
     }
   } finally {
     await ctx.close();
+    clearGracefulStopFlag();
   }
 }
 

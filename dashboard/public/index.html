@@ -57,6 +57,12 @@
             <input type="number" name="HH_KEYWORDS_MAX" min="1" max="999" step="1" placeholder="все" title="HH_KEYWORDS_MAX, пусто = весь файл" />
           </label>
         </div>
+        <div class="harvest-fields harvest-fields-prefs">
+          <label class="harvest-field harvest-field-checkbox" title="Соответствует requireRemote в config/preferences.json; значение чекбокса передаётся в harvest и перекрывает файл на этот запуск. Выбор запоминается в браузере.">
+            <input type="checkbox" name="HARVEST_REQUIRE_REMOTE" value="1" />
+            Только удалёнка / гибрид (если включено в preferences — жёсткий фильтр по тексту вакансии)
+          </label>
+        </div>
         <div class="harvest-fields harvest-fields-workhours">
           <label class="harvest-field harvest-field-checkbox">
             <input type="checkbox" name="HH_WORK_HOURS_ENABLED" value="1" />
@@ -88,7 +94,18 @@
         </div>
         <div class="harvest-actions">
           <button type="button" class="btn btn-harvest-start">Старт поиска</button>
+          <button
+            type="button"
+            class="btn btn-harvest-stop"
+            hidden
+            title="Кооперативная остановка harvest; если процесс уже не жив, снимает зависший индикатор в логе"
+          >
+            Остановить поиск
+          </button>
         </div>
+        <p class="harvest-stale-hint muted">
+          Одной кнопкой «Остановить поиск» создаётся флаг остановки для живого процесса и при необходимости дописывается завершение в лог (как раньше «Сбросить зависшее состояние»).
+        </p>
         <div class="harvest-stats">
           <p class="harvest-stats-line">
             <span class="harvest-stat-label">Уникальных ссылок в очереди на обход:</span>

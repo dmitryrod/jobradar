@@ -6,12 +6,15 @@ const tpl = document.getElementById('card-tpl');
 const vacancyTabsEl = document.querySelector('.vacancy-tabs');
 const harvestPanelEl = document.getElementById('harvest-panel');
 
+/** Запомненный выбор requireRemote на вкладке «Сбор вакансий» (приоритет над preferences.json при отображении и при «Старт поиска»). */
+const LS_HARVEST_REQUIRE_REMOTE = 'hhRuHarvestRequireRemote';
+
 /** @type {'queue' | 'collect'} */
 let viewMode = 'queue';
 let currentStatus = 'pending';
 
-/** Нормализованные веса для подсказки к скору (как в lib/openrouter-score.mjs) */
-let scoreWeights = { vacancy: 0.35, cvMatch: 0.65 };
+/** Нормализованные веса для подсказки к скору (как в lib/scoring-blend.mjs) */
+let scoreWeights = { vacancy: 0.35, cvMatch: 0.65, workFormat: 0, location: 0 };
 
 /** @type {{ id: string, variants: string[], selectedIndex: number } | null} */
 let draftModalState = null;
@@ -502,20 +505,53 @@ function renderCard(item) {
   const tooltip = node.querySelector('.score-tooltip');
   const wv = scoreWeights.vacancy;
   const wc = scoreWeights.cvMatch;
+  const ww = scoreWeights.workFormat ?? 0;
+  const wl = scoreWeights.location ?? 0;
   const sv = item.scoreVacancy;
   const scm = item.scoreCvMatch;
+  const swf = item.scoreWorkFormat;
+  const sloc = item.scoreLocation;
   const so = item.scoreOverall ?? item.geminiScore;
   if (Number.isFinite(Number(sv)) && Number.isFinite(Number(scm))) {
-    tooltip.innerHTML = [
-      '<strong>Вакансия</strong> (оценка модели): ',
+    const lines = [
+      '<strong>Вакансия</strong> (модель): ',
       String(sv),
-      '<br><strong>Сходство с твоими CV</strong>: ',
+      '<br><strong>CV</strong>: ',
       String(scm),
+    ];
+    if (Number.isFinite(Number(swf))) {
+      lines.push('<br><strong>Формат работы</strong>: ', String(swf));
+    }
+    if (Number.isFinite(Number(sloc))) {
+      lines.push('<br><strong>Локация</strong>: ', String(sloc));
+    }
+    lines.push(
       '<br><strong>Итог на карточке</strong>: ',
-      so != null && so !== '' ? String(so) : '—',
-      '<br><br>Если модель не вернула свой <code>scoreOverall</code>, итог считается как ',
-      `<code>${wv.toFixed(2)}×</code>вакансия + <code>${wc.toFixed(2)}×</code>CV (веса из preferences.json).`,
-    ].join('');
+      so != null && so !== '' ? String(so) : '—'
+    );
+    const rd = Number(item.scoreRuleDelta);
+    const sd = Number(item.scoreSalaryDelta);
+    if ((Number.isFinite(rd) && rd !== 0) || (Number.isFinite(sd) && sd !== 0)) {
+      lines.push(
+        '<br><small>Правила: ',
+        String(Number.isFinite(rd) ? rd : 0),
+        ', мягкая зарплата: +',
+        String(Number.isFinite(sd) ? sd : 0),
+        '</small>'
+      );
+    }
+    if (ww + wl > 1e-6) {
+      lines.push(
+        '<br><br>Итог (взвешенно): ',
+        `<code>${wv.toFixed(2)}×</code>вак. + <code>${wc.toFixed(2)}×</code>CV + <code>${ww.toFixed(2)}×</code>формат + <code>${wl.toFixed(2)}×</code>локация + коррекции.`
+      );
+    } else {
+      lines.push(
+        '<br><br>Без весов формат/локация — как раньше: ',
+        `<code>${wv.toFixed(2)}×</code>вакансия + <code>${wc.toFixed(2)}×</code>CV (или <code>scoreOverall</code> от модели).`
+      );
+    }
+    tooltip.innerHTML = lines.join('');
   } else {
     tooltip.textContent =
       'Нет разбивки по компонентам. Добавь записи через npm run harvest с включённым LLM (без --skip-llm).';
@@ -806,6 +842,9 @@ function syncHarvestWorkHoursUi() {
 if (harvestPanelEl) {
   harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]')?.addEventListener('change', syncHarvestKeywordLogicUi);
   harvestPanelEl.querySelector('input[name="HH_WORK_HOURS_ENABLED"]')?.addEventListener('change', syncHarvestWorkHoursUi);
+  harvestPanelEl.querySelector('input[name="HARVEST_REQUIRE_REMOTE"]')?.addEventListener('change', (e) => {
+    localStorage.setItem(LS_HARVEST_REQUIRE_REMOTE, e.target.checked ? '1' : '0');
+  });
   syncHarvestKeywordLogicUi();
   syncHarvestWorkHoursUi();
 }
@@ -836,7 +875,7 @@ async function refreshVacancyCounts() {
 
 async function fillHarvestFormFromApi() {
   if (!harvestPanelEl) return;
-  const { env } = await api('/api/harvest-env');
+  const { env, requireRemoteDefault } = await api('/api/harvest-env');
   harvestPanelEl.querySelectorAll('input[name], select[name]').forEach((inp) => {
     if (inp.type === 'checkbox') {
       if (inp.name === 'HH_WORK_HOURS_ENABLED') inp.checked = env[inp.name] === '1';
@@ -845,6 +884,15 @@ async function fillHarvestFormFromApi() {
     const v = env[inp.name];
     if (v != null && v !== '') inp.value = v;
   });
+  const reqRemoteCb = harvestPanelEl.querySelector('input[name="HARVEST_REQUIRE_REMOTE"]');
+  if (reqRemoteCb) {
+    const stored = localStorage.getItem(LS_HARVEST_REQUIRE_REMOTE);
+    if (stored === '1' || stored === '0') {
+      reqRemoteCb.checked = stored === '1';
+    } else {
+      reqRemoteCb.checked = !!requireRemoteDefault;
+    }
+  }
   syncHarvestKeywordLogicUi();
   syncHarvestWorkHoursUi();
 }
@@ -858,6 +906,8 @@ async function refreshHarvestStats() {
   }
   const badge = document.getElementById('harvest-badge');
   if (badge) badge.hidden = !s.running;
+  const harvestStopBtn = harvestPanelEl?.querySelector('.btn-harvest-stop');
+  if (harvestStopBtn) harvestStopBtn.hidden = !s.running;
   setCollectTabOpenedCount(s.uniqueUrlsOpened ?? 0);
   if (!harvestPanelEl) return;
   const stats = harvestPanelEl.querySelector('.harvest-stats');
@@ -890,7 +940,9 @@ async function refreshHarvestStats() {
       const parts = [];
       if (s.pid != null && String(s.pid).trim() !== '') parts.push(`PID ${s.pid}`);
       if (started) parts.push(`запущен ${started}`);
-      meta.textContent = parts.length ? `В процессе · ${parts.join(' · ')}` : 'В процессе';
+      let line = parts.length ? `В процессе · ${parts.join(' · ')}` : 'В процессе';
+      if (s.gracefulStopPending) line += ' · Остановка после текущей вакансии запрошена';
+      meta.textContent = line;
     } else if (s.exitAt != null) {
       const t = s.exitAtDisplay || s.exitAt || '';
       meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${t}`;
@@ -919,13 +971,24 @@ async function load() {
       if (w) {
         let v = Number(w.vacancy);
         let c = Number(w.cvMatch);
-        if (Number.isFinite(v) && Number.isFinite(c) && v + c > 0) {
-          const sum = v + c;
-          scoreWeights = { vacancy: v / sum, cvMatch: c / sum };
+        let wf = Number(w.workFormat);
+        let loc = Number(w.location);
+        if (!Number.isFinite(v)) v = 0.35;
+        if (!Number.isFinite(c)) c = 0.65;
+        if (!Number.isFinite(wf)) wf = 0;
+        if (!Number.isFinite(loc)) loc = 0;
+        const sum = v + c + wf + loc;
+        if (sum > 0) {
+          scoreWeights = {
+            vacancy: v / sum,
+            cvMatch: c / sum,
+            workFormat: wf / sum,
+            location: loc / sum,
+          };
         }
       }
     } catch {
-      scoreWeights = { vacancy: 0.35, cvMatch: 0.65 };
+      scoreWeights = { vacancy: 0.35, cvMatch: 0.65, workFormat: 0, location: 0 };
     }
 
     const { items } = await api(`/api/vacancies?status=${encodeURIComponent(currentStatus)}`);
@@ -993,12 +1056,46 @@ if (harvestPanelEl) {
     payload.HH_WORK_HOUR_END =
       harvestPanelEl.querySelector('input[name="HH_WORK_HOUR_END"]')?.value.trim() || '18';
   }
+  const reqRemoteCb = harvestPanelEl.querySelector('input[name="HARVEST_REQUIRE_REMOTE"]');
+  payload.HH_REQUIRE_REMOTE = reqRemoteCb?.checked ? '1' : '0';
   try {
     await api('/api/harvest-start', { method: 'POST', body: JSON.stringify(payload) });
     await refreshHarvestStats();
   } catch (e) {
-    alert(e.message);
+    let msg = e.message || String(e);
+    if (e.status === 409 && e.payload?.hint) msg += `\n\n${e.payload.hint}`;
+    alert(msg);
   }
+  });
+
+  harvestPanelEl.querySelector('.btn-harvest-stop')?.addEventListener('click', async () => {
+    try {
+      let r = await api('/api/harvest-stop-graceful', { method: 'POST', body: '{}' });
+      if (r.needStaleForce) {
+        if (
+          !confirm(
+            'В последнем прогоне в логе нет PID (старый формат). Убедитесь, что процесс harvest / окно Playwright не запущены. Дописать в лог завершение и снять индикатор?'
+          )
+        ) {
+          await refreshHarvestStats();
+          showToast('Запрошена кооперативная остановка; повторите «Остановить» с подтверждением, чтобы сбросить только лог', 'neutral');
+          return;
+        }
+        r = await api('/api/harvest-stop-graceful', {
+          method: 'POST',
+          body: JSON.stringify({ force: true }),
+        });
+      }
+      await refreshHarvestStats();
+      showToast(
+        r.staleLogCleared
+          ? 'Индикатор сброшен (процесс не был активен)'
+          : 'Остановка запрошена — дождитесь текущей карточки/ключа',
+        'neutral'
+      );
+    } catch (e) {
+      alert(e.message);
+    }
   });
 }
 

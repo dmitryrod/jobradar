@@ -10,7 +10,13 @@ import { fileURLToPath } from 'url';
 import { loadEnv } from '../lib/load-env.mjs';
 loadEnv();
 
-import { ROOT, HH_APPLY_CHAT_LOG_FILE, DATA_DIR, HARVEST_RUN_LOG_FILE } from '../lib/paths.mjs';
+import {
+  ROOT,
+  HH_APPLY_CHAT_LOG_FILE,
+  DATA_DIR,
+  HARVEST_RUN_LOG_FILE,
+  getHarvestGracefulStopFile,
+} from '../lib/paths.mjs';
 import { countApplyLaunchesLastHour, recordApplyLaunch } from '../lib/hh-apply-rate.mjs';
 import {
   loadQueue,
@@ -54,6 +60,18 @@ function sendJson(res, code, obj) {
     'Content-Length': Buffer.byteLength(body),
   });
   res.end(body);
+}
+
+/** Сортировка списка вакансий: scoreSortKey или итог + микродоля по maxUsd. */
+function vacancySortKey(rec) {
+  const sk = Number(rec.scoreSortKey);
+  if (Number.isFinite(sk)) return sk;
+  const base = Number(rec.scoreOverall ?? rec.geminiScore ?? 0);
+  const add =
+    rec.salaryEstimate?.ok && Number.isFinite(Number(rec.salaryEstimate.maxUsd))
+      ? Math.min(Number(rec.salaryEstimate.maxUsd), 999_999) / 1e7
+      : 0;
+  return base + add;
 }
 
 /**
@@ -120,6 +138,8 @@ const HARVEST_ENV_KEYS = [
   'HH_WORK_HOURS_ENABLED',
   'HH_WORK_HOUR_START',
   'HH_WORK_HOUR_END',
+  /** 0/1 — перекрывает requireRemote из config/preferences.json на время запуска harvest (дашборд / CLI). */
+  'HH_REQUIRE_REMOTE',
 ];
 
 function harvestEnvForForm() {
@@ -183,17 +203,72 @@ function readLastHarvestRunWindow(maxBytes = 48 * 1024 * 1024) {
   return text;
 }
 
+function harvestRunEndedAfterPos(text, pos, runId) {
+  const after = text.slice(pos);
+  if (after.includes(`\n--- harvest exit runId=${runId} code=`)) return true;
+  if (after.includes('\n--- harvest exit code=')) return true;
+  return false;
+}
+
+/**
+ * Разбор строки маркера: старый формат `… RUN runId ISO…` или новый `… RUN runId pid=N ISO…`.
+ * @returns {{ runId: string, pid: number | null } | null}
+ */
+function parseHarvestRunHeaderLine(firstLine) {
+  const p = '======== HARVEST_RUN ';
+  if (!firstLine.startsWith(p)) return null;
+  const inner = firstLine.slice(p.length).replace(/\s*========\s*$/i, '').trim();
+  const parts = inner.split(/\s+/);
+  if (parts.length < 2) return null;
+  const runId = parts[0];
+  let pid = null;
+  let i = 1;
+  if (parts[1].startsWith('pid=')) {
+    const n = Number(parts[1].slice(4));
+    if (Number.isFinite(n) && n > 0) pid = n;
+    i = 2;
+  }
+  if (!runId) return null;
+  return { runId, pid };
+}
+
+/** Последний маркер HARVEST_RUN в тексте. */
+function findLastHarvestRunHeader(text) {
+  const marker = '======== HARVEST_RUN ';
+  let pos = text.lastIndexOf('\n' + marker);
+  if (pos !== -1) pos += 1;
+  else {
+    pos = text.indexOf(marker);
+    if (pos === -1) return null;
+  }
+  const nl = text.indexOf('\n', pos);
+  const firstLine = nl === -1 ? text.slice(pos) : text.slice(pos, nl);
+  const parsed = parseHarvestRunHeaderLine(firstLine);
+  if (!parsed) return null;
+  return { ...parsed, pos };
+}
+
+function findHarvestHeaderForRunId(text, runId) {
+  const marker = `======== HARVEST_RUN ${runId} `;
+  const pos = text.lastIndexOf(marker);
+  if (pos === -1) return null;
+  const nl = text.indexOf('\n', pos);
+  const firstLine = nl === -1 ? text.slice(pos) : text.slice(pos, nl);
+  const parsed = parseHarvestRunHeaderLine(firstLine);
+  if (!parsed || parsed.runId !== runId) return null;
+  return { ...parsed, pos };
+}
+
 /** Windows + detached: родитель может получить `exit` раньше времени — смотрим лог. */
 function harvestStillActiveFromLog(runId) {
   if (!runId) return false;
   try {
     const text = readHarvestLogTail(6 * 1024 * 1024);
-    const marker = `======== HARVEST_RUN ${runId} `;
-    const pos = text.lastIndexOf(marker);
-    if (pos === -1) return false;
-    const after = text.slice(pos);
-    if (after.includes(`\n--- harvest exit runId=${runId} code=`)) return false;
-    return !after.includes('\n--- harvest exit code=');
+    const header = findHarvestHeaderForRunId(text, runId);
+    if (!header) return false;
+    if (harvestRunEndedAfterPos(text, header.pos, runId)) return false;
+    if (header.pid != null && !isProcessLikelyRunning(header.pid)) return false;
+    return true;
   } catch {
     return false;
   }
@@ -202,21 +277,16 @@ function harvestStillActiveFromLog(runId) {
 /**
  * Последний прогон в хвосте лога ещё без строки завершения — нужен после перезапуска дашборда
  * (in-memory harvestRun сброшен, а node harvest.mjs ещё идёт).
+ * Если в маркере есть pid и процесса нет — считаем прогон завершённым (зависшая запись в логе).
  */
 function harvestLastRunActiveFromLog() {
   try {
     const text = readHarvestLogTail(6 * 1024 * 1024);
-    const markerPrefix = '======== HARVEST_RUN ';
-    const pos = text.lastIndexOf(markerPrefix);
-    if (pos === -1) return false;
-    const nl = text.indexOf('\n', pos);
-    const firstLine = nl === -1 ? text.slice(pos) : text.slice(pos, nl);
-    const m = /^======== HARVEST_RUN ([^\s]+) /.exec(firstLine);
-    if (!m) return false;
-    const runId = m[1];
-    const after = text.slice(pos);
-    if (after.includes(`\n--- harvest exit runId=${runId} code=`)) return false;
-    return !after.includes('\n--- harvest exit code=');
+    const header = findLastHarvestRunHeader(text);
+    if (!header) return false;
+    if (harvestRunEndedAfterPos(text, header.pos, header.runId)) return false;
+    if (header.pid != null && !isProcessLikelyRunning(header.pid)) return false;
+    return true;
   } catch {
     return false;
   }
@@ -231,6 +301,13 @@ function isProcessLikelyRunning(pid) {
   } catch {
     return false;
   }
+}
+
+/** Есть ли живой harvest: PID из текущей сессии дашборда или из последнего маркера в логе. */
+function harvestLooksLiveForStop(header) {
+  if (harvestRun.pid != null && isProcessLikelyRunning(harvestRun.pid)) return true;
+  if (header?.pid != null && isProcessLikelyRunning(header.pid)) return true;
+  return false;
 }
 
 function harvestRunActiveForUi() {
@@ -326,10 +403,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/vacancies') {
     const status = url.searchParams.get('status') || 'pending';
     const q = loadQueue().filter((x) => x.status === status);
-    q.sort(
-      (a, b) =>
-        (b.scoreOverall ?? b.geminiScore ?? 0) - (a.scoreOverall ?? a.geminiScore ?? 0)
-    );
+    q.sort((a, b) => vacancySortKey(b) - vacancySortKey(a));
     return sendJson(res, 200, { items: q });
   }
 
@@ -339,10 +413,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: 'status: pending | approved | declined' });
     }
     const q = loadQueue().filter((x) => x.coverLetter?.status === letterStatus);
-    q.sort(
-      (a, b) =>
-        (b.scoreOverall ?? b.geminiScore ?? 0) - (a.scoreOverall ?? a.geminiScore ?? 0)
-    );
+    q.sort((a, b) => vacancySortKey(b) - vacancySortKey(a));
     return sendJson(res, 200, { items: q });
   }
 
@@ -368,15 +439,31 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && pathname === '/api/harvest-env') {
-    return sendJson(res, 200, { env: harvestEnvForForm() });
+    let requireRemoteDefault = false;
+    try {
+      requireRemoteDefault = !!loadPreferences().requireRemote;
+    } catch {
+      /* ignore */
+    }
+    return sendJson(res, 200, {
+      env: harvestEnvForForm(),
+      requireRemoteDefault,
+    });
   }
 
   if (req.method === 'GET' && pathname === '/api/harvest-status') {
     const stats = parseLastHarvestRunStats();
     const rel = path.relative(ROOT, HARVEST_RUN_LOG_FILE).replace(/\\/g, '/');
     const running = harvestRunActiveForUi();
+    const gracefulStopFile = getHarvestGracefulStopFile();
+    const gracefulStopPending = fs.existsSync(gracefulStopFile);
+    const hdrTail = readHarvestLogTail(256 * 1024);
+    const lastHdr = findLastHarvestRunHeader(hdrTail);
     return sendJson(res, 200, {
       running,
+      gracefulStopPending,
+      lastHarvestPid: lastHdr?.pid ?? null,
+      lastHarvestRunId: lastHdr?.runId ?? null,
       runId: harvestRun.runId,
       pid: harvestRun.pid,
       startedAt: harvestRun.startedAt,
@@ -398,10 +485,133 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  if (req.method === 'POST' && pathname === '/api/harvest-clear-stale') {
+    let body = {};
+    try {
+      const raw = await readBody(req);
+      if (raw.trim()) body = JSON.parse(raw);
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid JSON' });
+    }
+    const force = body.force === true;
+    const text = readHarvestLogTail(6 * 1024 * 1024);
+    const header = findLastHarvestRunHeader(text);
+    if (!header) {
+      return sendJson(res, 400, { error: 'В логе нет маркера HARVEST_RUN — сбрасывать нечего.' });
+    }
+    if (harvestRunEndedAfterPos(text, header.pos, header.runId)) {
+      return sendJson(res, 409, { error: 'Прогон в логе уже помечен как завершённый.' });
+    }
+    if (header.pid != null && isProcessLikelyRunning(header.pid)) {
+      return sendJson(res, 409, {
+        error: 'Процесс harvest с этим PID ещё работает. Сначала «Остановить поиск».',
+        pid: header.pid,
+      });
+    }
+    if ((header.pid == null || header.pid === 0) && !force) {
+      return sendJson(res, 409, {
+        error:
+          'В маркере нет PID (старый лог). Повторите с телом {"force":true}, если процесс harvest точно не запущен.',
+        needForce: true,
+      });
+    }
+    const ts = new Date().toISOString();
+    const tail = `\n--- harvest exit runId=${header.runId} code=0 signal=stale_log_clear at ${ts} ---\n`;
+    try {
+      fs.appendFileSync(HARVEST_RUN_LOG_FILE, tail, 'utf8');
+    } catch (e) {
+      return sendJson(res, 500, { error: e instanceof Error ? e.message : 'Не удалось дописать лог' });
+    }
+    try {
+      const sf = getHarvestGracefulStopFile();
+      if (fs.existsSync(sf)) fs.unlinkSync(sf);
+    } catch {
+      /* ignore */
+    }
+    return sendJson(res, 200, { ok: true, clearedRunId: header.runId });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/harvest-stop-graceful') {
+    let body = {};
+    try {
+      const raw = await readBody(req);
+      if (raw.trim()) body = JSON.parse(raw);
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid JSON' });
+    }
+    const forceStale = body.force === true;
+
+    if (!harvestRunActiveForUi()) {
+      return sendJson(res, 409, {
+        error: 'Сбор не запущен — останавливать нечего.',
+      });
+    }
+    try {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.writeFileSync(
+        getHarvestGracefulStopFile(),
+        `${JSON.stringify({ requestedAt: new Date().toISOString() })}\n`,
+        'utf8'
+      );
+    } catch (e) {
+      return sendJson(res, 500, {
+        error: e instanceof Error ? e.message : 'Не удалось записать флаг остановки',
+      });
+    }
+
+    /**
+     * Зависший индикатор в UI: прогон в логе без exit, но процесс не жив.
+     * С теми же оговорками, что POST /api/harvest-clear-stale: маркер без PID — только с force или если известный PID спавна мёртв.
+     */
+    let staleLogCleared = false;
+    let needStaleForce = false;
+    try {
+      const text = readHarvestLogTail(6 * 1024 * 1024);
+      const header = findLastHarvestRunHeader(text);
+      if (header && !harvestRunEndedAfterPos(text, header.pos, header.runId)) {
+        const live = harvestLooksLiveForStop(header);
+        if (!live) {
+          const hasPid = header.pid != null && header.pid > 0;
+          let canClearStale = false;
+          if (hasPid) {
+            canClearStale = !isProcessLikelyRunning(header.pid);
+          } else {
+            canClearStale =
+              forceStale ||
+              (harvestRun.pid != null && !isProcessLikelyRunning(harvestRun.pid));
+          }
+          if (canClearStale) {
+            const ts = new Date().toISOString();
+            const tail = `\n--- harvest exit runId=${header.runId} code=0 signal=stop_unified at ${ts} ---\n`;
+            fs.appendFileSync(HARVEST_RUN_LOG_FILE, tail, 'utf8');
+            staleLogCleared = true;
+            try {
+              const sf = getHarvestGracefulStopFile();
+              if (fs.existsSync(sf)) fs.unlinkSync(sf);
+            } catch {
+              /* ignore */
+            }
+          } else if (!hasPid) {
+            needStaleForce = true;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[harvest-stop-graceful] stale log branch', e);
+    }
+
+    let mode = 'graceful_stop_pending';
+    if (staleLogCleared) mode = 'stale_log_cleared';
+    else if (needStaleForce) mode = 'need_stale_force';
+
+    return sendJson(res, 200, { ok: true, mode, staleLogCleared, needStaleForce });
+  }
+
   if (req.method === 'POST' && pathname === '/api/harvest-start') {
     if (harvestRunActiveForUi()) {
       return sendJson(res, 409, {
-        error: 'Уже выполняется сбор (harvest). Дождитесь завершения или перезапустите дашборд.',
+        error:
+          'Уже выполняется сбор (harvest). Дождитесь завершения или нажмите «Остановить поиск» (в т.ч. сбросит зависший индикатор в логе, если процесса уже нет).',
         runId: harvestRun.runId,
         pid: harvestRun.pid,
       });
@@ -419,24 +629,36 @@ const server = http.createServer(async (req, res) => {
     }
 
     const runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-    const markerLine = `======== HARVEST_RUN ${runId} ${new Date().toISOString()} ========`;
     /** Не бросать исключения наружу — иначе падает весь процесс дашборда и браузер даёт «Failed to fetch». */
     const harvestLogStream = fs.createWriteStream(HARVEST_RUN_LOG_FILE, { flags: 'a' });
     try {
       fs.mkdirSync(DATA_DIR, { recursive: true });
-      fs.appendFileSync(HARVEST_RUN_LOG_FILE, `\n${markerLine}\n`, 'utf8');
+      try {
+        const sf = getHarvestGracefulStopFile();
+        if (fs.existsSync(sf)) fs.unlinkSync(sf);
+      } catch {
+        /* ignore */
+      }
 
       /**
        * Windows: в stdio нельзя числовой fd; передача того же fs.WriteStream в stdout+stderr дочернего процесса
        * в некоторых сборках Node приводит к падению родителя при spawn → обрыв TCP и Failed to fetch.
        * Надёжно: pipe + запись в файл в родителе.
        */
+      const gracefulStopAbs = getHarvestGracefulStopFile();
       const child = spawn(process.execPath, [scriptPath], {
         cwd: ROOT,
         detached: false,
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: mergeHarvestChildEnv(body),
+        env: {
+          ...mergeHarvestChildEnv(body),
+          /** Один и тот же абсолютный путь, что и у POST harvest-stop-graceful (без расхождений cwd/HH_DATA_DIR). */
+          HH_GRACEFUL_STOP_FILE: gracefulStopAbs,
+        },
       });
+
+      const markerLine = `======== HARVEST_RUN ${runId} pid=${child.pid ?? 0} ${new Date().toISOString()} ========`;
+      fs.appendFileSync(HARVEST_RUN_LOG_FILE, `\n${markerLine}\n`, 'utf8');
 
       const pipeOut = (stream, label) => {
         if (!stream) return;
@@ -615,6 +837,9 @@ const server = http.createServer(async (req, res) => {
               salaryRaw,
               description: desc,
               url: rec.url,
+              address: parsed.address || '',
+              workConditionsLines: Array.isArray(parsed.workConditionsLines) ? parsed.workConditionsLines : [],
+              employment: parsed.employment || '',
             },
             cvBundle,
             prefs
@@ -624,7 +849,13 @@ const server = http.createServer(async (req, res) => {
             openRouterModel: llm.providerModel || null,
             scoreVacancy: llm.scoreVacancy,
             scoreCvMatch: llm.scoreCvMatch,
+            scoreWorkFormat: llm.scoreWorkFormat,
+            scoreLocation: llm.scoreLocation,
             scoreOverall: llm.scoreOverall,
+            scoreSortKey: llm.scoreSortKey,
+            scoreBlendedBeforeDelta: llm.scoreBlendedBeforeDelta,
+            scoreRuleDelta: llm.scoreRuleDelta,
+            scoreSalaryDelta: llm.scoreSalaryDelta,
             geminiScore: llm.scoreOverall ?? llm.score,
             geminiSummary: llm.summary,
             geminiRisks: llm.risks,

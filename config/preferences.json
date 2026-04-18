@@ -1,0 +1,52 @@
+{
+  "minMonthlyUsd": 0,
+  "rubPerUsd": 80,
+  "requireRemote": true,
+  "allowHybrid": true,
+  "allowUnknownSalary": true,
+  "remotePositivePatterns": [
+    "удален",
+    "удалён",
+    "дистанцион",
+    "remote",
+    "работа из дома",
+    "из любой точки",
+    "любая локация"
+  ],
+  "hybridPatterns": [
+    "гибрид",
+    "hybrid"
+  ],
+  "officeOnlyPatterns": [
+    "только офис",
+    "офис обязателен",
+    "работа в офисе компании",
+    "в офисе ежедневно"
+  ],
+  "llmScoreWeights": {
+    "vacancy": 0.3,
+    "cvMatch": 0.5,
+    "workFormat": 0.1,
+    "location": 0.1
+  },
+  "scoringGeo": {
+    "baseCity": "Санкт-Петербург",
+    "acceptableCities": [],
+    "remoteIsAcceptable": true,
+    "penaltyUnknownLocation": 0,
+    "relocationPatterns": ["релокаци", "relocat", "релокация"]
+  },
+  "scoringWorkFormat": {
+    "prefer": "remote_first",
+    "remoteBonus": 5,
+    "hybridBonus": 1,
+    "officePenalty": 20,
+    "useRuleBasedAdjustment": true
+  },
+  "scoringSalarySoft": {
+    "enabled": true,
+    "maxBonusPoints": 3,
+    "referenceUsd": 2000
+  },
+  "hhApplyChatMaxPerHour": 8
+}

@@ -1,13 +1,13 @@
 # Метрики NoRissk
 
-## Итоговый скор: 54 / 100
+## Итоговый скор: 55 / 100
 
 **Интерпретация:** заметные проблемы
 
 | Компонент      | Вклад | Оценка |
 | -------------- | ----- | ------ |
 | Тесты         | 30%   | 55% |
-| Документация  | 20%   | 58% |
+| Документация  | 20%   | 60% |
 | Делегирование | 25%   | 5% |
 | Security      | 15%   | 100% |
 | Debugger      | 10%   | 0 |
@@ -16,12 +16,12 @@
 
 ## Детали (сводка)
 
-**Период:** 2026-04-18 – 2026-04-17 | **Сессий:** 19
+**Период:** 2026-04-18 – 2026-04-17 | **Сессий:** 20
 
 | Workflow   | Сессий |
 | ---------- | ------ |
 | scaffold   | 11 |
-| implement  | 7 |
+| implement  | 8 |
 | feature    | 0 |
 
 | integrate-skill | 0 |
@@ -33,12 +33,13 @@
 | engineering / none   | 17 |
 | marketing_tactical   | 0 |
 | marketing_research   | 0 |
-| other                | 2 |
+| other                | 3 |
 
 ## Последние сессии
 
 | Дата       | Workflow | Task type | Primary agent | Задача                    | Тесты | Debugger |
 | ---------- | -------- | --------- | ------------- | ------------------------- | ----- | -------- |
+| 2026-04-18 | implement | hh_ru_apply | composer      | Остановить поиск: после  | N/A   | 0 |
 | 2026-04-18 | scaffold | engineering | —             | Счётчик «Добавлено в оче | N/A   | 0 |
 | 2026-04-18 | scaffold | engineering | —             | app.js: optional harvest | N/A   | 0 |
 | 2026-04-18 | scaffold | engineering | —             | setHarvestStatText(sel,v | ✓     | 0 |
@@ -48,4 +49,3 @@
 | 2026-04-17 | scaffold | engineering | —             | score-tooltip-clamp.js,  | ✓     | 0 |
 | 2026-04-16 | implement | engineering | —             | paths HH_DATA_DIR, docke | ✓     | 0 |
 | 2026-04-16 | implement | engineering | —             | chroma_store.py query gu | —     | 0 |
-| 2026-04-16 | implement | engineering | —             | chroma_store.py lexical  | —     | 0 |
