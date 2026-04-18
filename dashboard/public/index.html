@@ -18,10 +18,22 @@
         </button>
       </div>
       <div class="tabs vacancy-tabs">
-        <button type="button" data-tab="collect" class="tab">Сбор вакансий</button>
-        <button type="button" data-status="pending" class="tab active">На проверке</button>
-        <button type="button" data-status="approved" class="tab">Подходят</button>
-        <button type="button" data-status="rejected" class="tab">Отклонённые</button>
+        <button type="button" data-tab="collect" class="tab">
+          Сбор вакансий
+          <span class="tab-count" data-tab-count="collect" aria-label="Открыто карточек (уникальных URL)">0</span>
+        </button>
+        <button type="button" data-status="pending" class="tab active">
+          На проверке
+          <span class="tab-count" data-tab-count="pending" aria-label="Вакансий на проверке">0</span>
+        </button>
+        <button type="button" data-status="approved" class="tab">
+          Подходят
+          <span class="tab-count" data-tab-count="approved" aria-label="Подходящих вакансий">0</span>
+        </button>
+        <button type="button" data-status="rejected" class="tab">
+          Отклонённые
+          <span class="tab-count" data-tab-count="rejected" aria-label="Отклонённых вакансий">0</span>
+        </button>
       </div>
       <section id="harvest-panel" class="harvest-panel" hidden>
         <p class="harvest-lead">
@@ -78,10 +90,6 @@
           <button type="button" class="btn btn-harvest-start">Старт поиска</button>
         </div>
         <div class="harvest-stats">
-          <p class="harvest-stats-line harvest-stats-line-current-kw">
-            <span class="harvest-stat-label">Текущее ключевое слово в работе:</span>
-            <strong class="harvest-stat-current-keyword">—</strong>
-          </p>
           <p class="harvest-stats-line">
             <span class="harvest-stat-label">Уникальных ссылок в очереди на обход:</span>
             <strong class="harvest-stat-queued">0</strong>
@@ -90,19 +98,11 @@
             <span class="harvest-stat-label">Открыто карточек (уникальных URL):</span>
             <strong class="harvest-stat-opened">0</strong>
           </p>
-          <p class="harvest-stats-line">
-            <span class="harvest-stat-label">Добавлено в очередь дашборда:</span>
-            <strong class="harvest-stat-added">0</strong>
-          </p>
           <p class="harvest-stats-meta muted"></p>
           <div class="harvest-stats-lists">
             <details class="harvest-urls-details">
               <summary>Список открытых ссылок (<span class="harvest-urls-count">0</span>)</summary>
               <ul class="harvest-urls-list"></ul>
-            </details>
-            <details class="harvest-keywords-details">
-              <summary>Список отработанных ключевых слов (<span class="harvest-keywords-count">0</span>)</summary>
-              <ul class="harvest-keywords-list"></ul>
             </details>
           </div>
           <p class="harvest-log-hint muted"></p>

@@ -810,6 +810,30 @@ if (harvestPanelEl) {
   syncHarvestWorkHoursUi();
 }
 
+function setCollectTabOpenedCount(n) {
+  if (!vacancyTabsEl) return;
+  const el = vacancyTabsEl.querySelector('[data-tab-count="collect"]');
+  if (el) el.textContent = String(n ?? 0);
+}
+
+function setQueueTabCount(status, n) {
+  if (!vacancyTabsEl) return;
+  const el = vacancyTabsEl.querySelector(`[data-tab-count="${status}"]`);
+  if (el) el.textContent = String(n ?? 0);
+}
+
+async function refreshVacancyCounts() {
+  if (!vacancyTabsEl) return;
+  try {
+    const c = await api('/api/vacancy-counts');
+    setQueueTabCount('pending', c.pending);
+    setQueueTabCount('approved', c.approved);
+    setQueueTabCount('rejected', c.rejected);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function fillHarvestFormFromApi() {
   if (!harvestPanelEl) return;
   const { env } = await api('/api/harvest-env');
@@ -834,21 +858,16 @@ async function refreshHarvestStats() {
   }
   const badge = document.getElementById('harvest-badge');
   if (badge) badge.hidden = !s.running;
+  setCollectTabOpenedCount(s.uniqueUrlsOpened ?? 0);
   if (!harvestPanelEl) return;
   const stats = harvestPanelEl.querySelector('.harvest-stats');
   if (!stats) return;
-  const curKwEl = stats.querySelector('.harvest-stat-current-keyword');
-  if (curKwEl) {
-    curKwEl.textContent =
-      s.running && s.harvestCurrentKeyword ? String(s.harvestCurrentKeyword) : '—';
-  }
   const setHarvestStatText = (sel, val) => {
     const el = stats.querySelector(sel);
     if (el) el.textContent = String(val ?? '');
   };
   setHarvestStatText('.harvest-stat-queued', s.uniqueUrlsQueued ?? 0);
   setHarvestStatText('.harvest-stat-opened', s.uniqueUrlsOpened ?? 0);
-  setHarvestStatText('.harvest-stat-added', s.addedToQueue ?? 0);
   setHarvestStatText('.harvest-urls-count', s.uniqueUrlsOpened ?? 0);
   const ul = stats.querySelector('.harvest-urls-list');
   if (ul) {
@@ -864,24 +883,14 @@ async function refreshHarvestStats() {
       ul.appendChild(li);
     }
   }
-  const kwDone = s.harvestKeywordsCompleted || [];
-  const kwCount = typeof s.harvestKeywordsCompletedCount === 'number' ? s.harvestKeywordsCompletedCount : kwDone.length;
-  const kwCountEl = stats.querySelector('.harvest-keywords-count');
-  if (kwCountEl) kwCountEl.textContent = String(kwCount);
-  const kwUl = stats.querySelector('.harvest-keywords-list');
-  if (kwUl) {
-    kwUl.innerHTML = '';
-    for (const phrase of kwDone) {
-      const li = document.createElement('li');
-      li.textContent = phrase;
-      kwUl.appendChild(li);
-    }
-  }
   const meta = stats.querySelector('.harvest-stats-meta');
   if (meta) {
     if (s.running) {
-      const t = s.startedAtDisplay || s.startedAt || '';
-      meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${t}`;
+      const started = s.startedAtDisplay || s.startedAt || '';
+      const parts = [];
+      if (s.pid != null && String(s.pid).trim() !== '') parts.push(`PID ${s.pid}`);
+      if (started) parts.push(`запущен ${started}`);
+      meta.textContent = parts.length ? `В процессе · ${parts.join(' · ')}` : 'В процессе';
     } else if (s.exitAt != null) {
       const t = s.exitAtDisplay || s.exitAt || '';
       meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${t}`;
@@ -895,10 +904,12 @@ async function refreshHarvestStats() {
 
 async function load() {
   if (!listEl) return;
+  const countsPromise = refreshVacancyCounts();
   listEl.innerHTML = '';
   if (viewMode === 'collect') {
     listEl.innerHTML =
       '<p class="empty collect-hint">Очередь на соседних вкладках. Сбор после «Старт поиска» идёт в фоне — смотрите индикатор в шапке и блок статистики выше.</p>';
+    await countsPromise;
     return;
   }
   try {
@@ -926,6 +937,7 @@ async function load() {
   } catch (e) {
     listEl.innerHTML = `<p class="err">${e.message}</p>`;
   }
+  await countsPromise;
 }
 
 if (vacancyTabsEl) {
@@ -992,6 +1004,7 @@ if (harvestPanelEl) {
 
 setInterval(() => {
   refreshHarvestStats().catch(() => {});
+  refreshVacancyCounts();
 }, 2000);
 
 syncVacancyTabs();

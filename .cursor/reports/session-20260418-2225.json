@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-04-18T22:25:00.000Z",
+  "reportDate": "2026-04-18",
+  "command": "norissk",
+  "workflow": "scaffold",
+  "workflowReason": "Правки только UI дашборда (HTML/CSS/JS). Task недоступен.",
+  "primaryAgent": "composer",
+  "taskType": "engineering",
+  "escalation": false,
+  "subagentsCalled": [],
+  "debuggerCalls": 0,
+  "testsApplicable": false,
+  "testsPassed": null,
+  "reviewerFindings": null,
+  "securityAuditorCalled": false,
+  "documentationCreated": false,
+  "taskSummary": "Упрощён блок harvest-stats: убраны текущее ключевое слово, счётчик addedToQueue, список отработанных ключей; строка «В процессе» — только PID (если есть) и время запуска."
+}

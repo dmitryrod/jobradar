@@ -311,6 +311,18 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${host}`);
   const pathname = requestPathname(url);
 
+  if (req.method === 'GET' && pathname === '/api/vacancy-counts') {
+    const q = loadQueue();
+    const counts = { pending: 0, approved: 0, rejected: 0 };
+    for (const x of q) {
+      const st = x.status;
+      if (st === 'pending') counts.pending += 1;
+      else if (st === 'approved') counts.approved += 1;
+      else if (st === 'rejected') counts.rejected += 1;
+    }
+    return sendJson(res, 200, counts);
+  }
+
   if (req.method === 'GET' && pathname === '/api/vacancies') {
     const status = url.searchParams.get('status') || 'pending';
     const q = loadQueue().filter((x) => x.status === status);

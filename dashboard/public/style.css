@@ -103,11 +103,32 @@ h1 {
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .tab.active {
   color: var(--text);
   border-color: var(--accent);
+}
+
+.tab-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-width: 1.35em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.tab.active .tab-count {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .harvest-badge {
@@ -231,27 +252,15 @@ h1 {
 }
 
 .harvest-stats-lists {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
   margin-top: 0.65rem;
-  align-items: start;
 }
 
-@media (max-width: 720px) {
-  .harvest-stats-lists {
-    grid-template-columns: 1fr;
-  }
-}
-
-.harvest-urls-details,
-.harvest-keywords-details {
+.harvest-urls-details {
   margin: 0;
   min-width: 0;
 }
 
-.harvest-urls-list,
-.harvest-keywords-list {
+.harvest-urls-list {
   max-height: 14rem;
   overflow: auto;
   font-size: 0.78rem;
@@ -262,10 +271,6 @@ h1 {
 .harvest-urls-list a {
   color: var(--accent);
   word-break: break-all;
-}
-
-.harvest-keywords-list li {
-  word-break: break-word;
 }
 
 .collect-hint {
