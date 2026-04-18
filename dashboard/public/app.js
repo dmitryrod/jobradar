@@ -51,10 +51,21 @@ async function api(path, opts = {}) {
     typeof path === 'string' && path.startsWith('/')
       ? new URL(path, window.location.origin).toString()
       : path;
-  const r = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
-  });
+  let r;
+  try {
+    r = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts,
+    });
+  } catch (e) {
+    const msg =
+      e instanceof TypeError
+        ? 'Нет ответа от дашборда (процесс node мог упасть или порт занят). Перезапустите: npm run dashboard'
+        : String(e?.message || e);
+    const err = new Error(msg);
+    err.cause = e;
+    throw err;
+  }
   const text = await r.text();
   let data;
   try {
@@ -869,9 +880,11 @@ async function refreshHarvestStats() {
   const meta = stats.querySelector('.harvest-stats-meta');
   if (meta) {
     if (s.running) {
-      meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${s.startedAt || ''}`;
+      const t = s.startedAtDisplay || s.startedAt || '';
+      meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${t}`;
     } else if (s.exitAt != null) {
-      meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${s.exitAt}`;
+      const t = s.exitAtDisplay || s.exitAt || '';
+      meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${t}`;
     } else {
       meta.textContent = '';
     }
@@ -970,7 +983,6 @@ if (harvestPanelEl) {
   }
   try {
     await api('/api/harvest-start', { method: 'POST', body: JSON.stringify(payload) });
-    showToast('Запущен harvest (поиск, парсинг, оценка LLM)', 'good');
     await refreshHarvestStats();
   } catch (e) {
     alert(e.message);

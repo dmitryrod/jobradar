@@ -4,7 +4,7 @@
  * Перед запуском: npm run login, в .env — POLZA_API_KEY и/или OpenRouter_API_KEY (см. .env.example, config/OPENROUTER.md).
  * Флаги: --skip-llm | --skip-gemini — без вызова LLM (score=0).
  *
- * События для дашборда: строки `HARVEST_JSON {...}` в stdout (пишутся в data/harvest-run.log при запуске из UI).
+ * События для дашборда: строки `HARVEST_JSON {...}` в stdout (в лог через UI). Пишем через writeSync, иначе при файле вместо TTY буферизация и дашборд не видит keyword_active.
  * `keyword_done` — ключ отработан на этапе поиска/сбора ссылок (список в UI с новыми сверху).
  * После успешного прохода первая строка config/search-keywords.txt переносится в конец (HH_ROTATE_KEYWORD_AFTER_RUN=0 — отключить).
  *
@@ -129,7 +129,16 @@ function logSkipped(payload) {
 
 /** События для дашборда (парсятся из лога по префиксу HARVEST_JSON). */
 function harvestEvent(obj) {
-  console.log(`HARVEST_JSON ${JSON.stringify(obj)}`);
+  const line = `HARVEST_JSON ${JSON.stringify(obj)}\n`;
+  try {
+    fs.writeSync(1, line, 'utf8');
+  } catch {
+    try {
+      process.stdout.write(line);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 /**

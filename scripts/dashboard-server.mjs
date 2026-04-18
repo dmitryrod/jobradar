@@ -29,6 +29,7 @@ import {
 } from '../lib/cover-letter-openrouter.mjs';
 import { appendCoverLetterUserEditSnippet } from '../lib/cover-letter-user-edits.mjs';
 import { fetchVacancyTextFromHh } from '../lib/refresh-vacancy-from-hh.mjs';
+import { formatTimestampForDashboard } from '../lib/tz-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATIC_DIR = path.join(ROOT, 'dashboard', 'public');
@@ -191,10 +192,53 @@ function harvestStillActiveFromLog(runId) {
     const pos = text.lastIndexOf(marker);
     if (pos === -1) return false;
     const after = text.slice(pos);
+    if (after.includes(`\n--- harvest exit runId=${runId} code=`)) return false;
     return !after.includes('\n--- harvest exit code=');
   } catch {
     return false;
   }
+}
+
+/**
+ * Последний прогон в хвосте лога ещё без строки завершения — нужен после перезапуска дашборда
+ * (in-memory harvestRun сброшен, а node harvest.mjs ещё идёт).
+ */
+function harvestLastRunActiveFromLog() {
+  try {
+    const text = readHarvestLogTail(6 * 1024 * 1024);
+    const markerPrefix = '======== HARVEST_RUN ';
+    const pos = text.lastIndexOf(markerPrefix);
+    if (pos === -1) return false;
+    const nl = text.indexOf('\n', pos);
+    const firstLine = nl === -1 ? text.slice(pos) : text.slice(pos, nl);
+    const m = /^======== HARVEST_RUN ([^\s]+) /.exec(firstLine);
+    if (!m) return false;
+    const runId = m[1];
+    const after = text.slice(pos);
+    if (after.includes(`\n--- harvest exit runId=${runId} code=`)) return false;
+    return !after.includes('\n--- harvest exit code=');
+  } catch {
+    return false;
+  }
+}
+
+/** Процесс с этим PID ещё существует (сигнал 0). Нужен при ложном `exit` у ChildProcess при detached на Windows. */
+function isProcessLikelyRunning(pid) {
+  if (pid == null || typeof pid !== 'number' || !Number.isFinite(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function harvestRunActiveForUi() {
+  if (harvestRun.running) return true;
+  if (isProcessLikelyRunning(harvestRun.pid)) return true;
+  if (harvestRun.runId && harvestStillActiveFromLog(harvestRun.runId)) return true;
+  if (harvestLastRunActiveFromLog()) return true;
+  return false;
 }
 
 function parseHarvestJsonFromText(text) {
@@ -318,14 +362,16 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/harvest-status') {
     const stats = parseLastHarvestRunStats();
     const rel = path.relative(ROOT, HARVEST_RUN_LOG_FILE).replace(/\\/g, '/');
-    const running = harvestRun.running || harvestStillActiveFromLog(harvestRun.runId);
+    const running = harvestRunActiveForUi();
     return sendJson(res, 200, {
       running,
       runId: harvestRun.runId,
       pid: harvestRun.pid,
       startedAt: harvestRun.startedAt,
+      startedAtDisplay: formatTimestampForDashboard(harvestRun.startedAt, process.env),
       exitCode: harvestRun.exitCode,
       exitAt: harvestRun.exitAt,
+      exitAtDisplay: formatTimestampForDashboard(harvestRun.exitAt, process.env),
       urlsQueued: stats.urlsQueued,
       urlsOpened: stats.urlsOpened,
       uniqueUrlsQueued: stats.urlsQueued.length,
@@ -341,7 +387,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && pathname === '/api/harvest-start') {
-    if (harvestRun.running || harvestStillActiveFromLog(harvestRun.runId)) {
+    if (harvestRunActiveForUi()) {
       return sendJson(res, 409, {
         error: 'Уже выполняется сбор (harvest). Дождитесь завершения или перезапустите дашборд.',
         runId: harvestRun.runId,
@@ -359,53 +405,110 @@ const server = http.createServer(async (req, res) => {
     if (!fs.existsSync(scriptPath)) {
       return sendJson(res, 500, { error: 'Скрипт harvest.mjs не найден' });
     }
+
     const runId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const markerLine = `======== HARVEST_RUN ${runId} ${new Date().toISOString()} ========`;
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.appendFileSync(HARVEST_RUN_LOG_FILE, `\n${markerLine}\n`, 'utf8');
-
-    const logFd = fs.openSync(HARVEST_RUN_LOG_FILE, 'a');
-    let child;
+    /** Не бросать исключения наружу — иначе падает весь процесс дашборда и браузер даёт «Failed to fetch». */
+    const harvestLogStream = fs.createWriteStream(HARVEST_RUN_LOG_FILE, { flags: 'a' });
     try {
-      child = spawn(process.execPath, [scriptPath], {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.appendFileSync(HARVEST_RUN_LOG_FILE, `\n${markerLine}\n`, 'utf8');
+
+      /**
+       * Windows: в stdio нельзя числовой fd; передача того же fs.WriteStream в stdout+stderr дочернего процесса
+       * в некоторых сборках Node приводит к падению родителя при spawn → обрыв TCP и Failed to fetch.
+       * Надёжно: pipe + запись в файл в родителе.
+       */
+      const child = spawn(process.execPath, [scriptPath], {
         cwd: ROOT,
-        detached: true,
-        stdio: ['ignore', logFd, logFd],
+        detached: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: mergeHarvestChildEnv(body),
       });
-    } finally {
-      fs.closeSync(logFd);
-    }
 
-    harvestRun = {
-      running: true,
-      runId,
-      pid: child.pid ?? null,
-      startedAt: new Date().toISOString(),
-      exitCode: null,
-      exitAt: null,
-    };
+      const pipeOut = (stream, label) => {
+        if (!stream) return;
+        stream.pipe(harvestLogStream, { end: false });
+        stream.on('error', (err) => {
+          console.error(`[harvest] child ${label}`, err);
+        });
+      };
+      pipeOut(child.stdout, 'stdout');
+      pipeOut(child.stderr, 'stderr');
 
-    child.on('exit', (code, signal) => {
-      harvestRun.running = false;
-      harvestRun.exitCode = code;
-      harvestRun.exitAt = new Date().toISOString();
-      const tail = `\n--- harvest exit code=${code} signal=${signal || ''} at ${harvestRun.exitAt} ---\n`;
+      harvestRun = {
+        running: true,
+        runId,
+        pid: child.pid ?? null,
+        startedAt: new Date().toISOString(),
+        exitCode: null,
+        exitAt: null,
+      };
+
+      child.on('error', (err) => {
+        console.error('[harvest] spawn error', err);
+        try {
+          harvestLogStream.end();
+        } catch {
+          /* ignore */
+        }
+        if (harvestRun.runId === runId) {
+          harvestRun.running = false;
+          harvestRun.exitCode = -1;
+          harvestRun.exitAt = new Date().toISOString();
+        }
+      });
+
+      child.on('exit', (code, signal) => {
+        const ridAtExit = harvestRun.runId;
+        const pidAtExit = harvestRun.pid;
+        setTimeout(() => {
+          const endHarvestLog = () => {
+            try {
+              harvestLogStream.end();
+            } catch {
+              /* ignore */
+            }
+          };
+          if (ridAtExit !== harvestRun.runId) {
+            endHarvestLog();
+            return;
+          }
+          if (isProcessLikelyRunning(pidAtExit)) return;
+          if (harvestRun.exitAt && harvestRun.runId === ridAtExit) return;
+
+          harvestRun.running = false;
+          harvestRun.exitCode = code;
+          harvestRun.exitAt = new Date().toISOString();
+          const tail = `\n--- harvest exit runId=${ridAtExit || ''} code=${code} signal=${signal || ''} at ${harvestRun.exitAt} ---\n`;
+          try {
+            fs.appendFileSync(HARVEST_RUN_LOG_FILE, tail, 'utf8');
+          } catch {
+            /* ignore */
+          }
+          endHarvestLog();
+        }, 450);
+      });
+
+      child.unref();
+
+      return sendJson(res, 200, {
+        ok: true,
+        runId,
+        pid: child.pid,
+        logFile: path.relative(ROOT, HARVEST_RUN_LOG_FILE).replace(/\\/g, '/'),
+      });
+    } catch (e) {
+      console.error('[harvest-start]', e);
       try {
-        fs.appendFileSync(HARVEST_RUN_LOG_FILE, tail, 'utf8');
+        harvestLogStream.end();
       } catch {
         /* ignore */
       }
-    });
-
-    child.unref();
-
-    return sendJson(res, 200, {
-      ok: true,
-      runId,
-      pid: child.pid,
-      logFile: path.relative(ROOT, HARVEST_RUN_LOG_FILE).replace(/\\/g, '/'),
-    });
+      return sendJson(res, 500, {
+        error: e instanceof Error ? e.message : 'Не удалось запустить harvest',
+      });
+    }
   }
 
   if (req.method === 'POST' && pathname === '/api/action') {
@@ -703,27 +806,42 @@ const server = http.createServer(async (req, res) => {
     const header = `\n======== ${new Date().toISOString()} recordId=${id} launch dashboard pid=${process.pid} ========\n`;
     fs.appendFileSync(HH_APPLY_CHAT_LOG_FILE, header, 'utf8');
 
-    /**
-     * detached + pipe ломает дочерний процесс (буфер stdout заполняется).
-     * Пишем stdout/stderr в файл через унаследованный fd.
-     */
-    const logFd = fs.openSync(HH_APPLY_CHAT_LOG_FILE, 'a');
+    const applyChatLogStream = fs.createWriteStream(HH_APPLY_CHAT_LOG_FILE, { flags: 'a' });
     let child;
     try {
       child = spawn(process.execPath, [scriptPath, `--id=${id}`], {
         cwd: ROOT,
-        detached: true,
-        stdio: ['ignore', logFd, logFd],
+        detached: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: process.env,
       });
-    } finally {
-      fs.closeSync(logFd);
+    } catch (e) {
+      try {
+        applyChatLogStream.end();
+      } catch {
+        /* ignore */
+      }
+      console.error('[hh-apply-chat launch]', e);
+      return sendJson(res, 500, { error: e instanceof Error ? e.message : 'spawn failed' });
     }
+
+    const pipeChat = (stream, label) => {
+      if (!stream) return;
+      stream.pipe(applyChatLogStream, { end: false });
+      stream.on('error', (err) => console.error(`[hh-apply-chat ${label}]`, err));
+    };
+    pipeChat(child.stdout, 'stdout');
+    pipeChat(child.stderr, 'stderr');
 
     child.on('exit', (code, signal) => {
       const line = `\n--- child exit code=${code} signal=${signal || ''} at ${new Date().toISOString()} ---\n`;
       try {
         fs.appendFileSync(HH_APPLY_CHAT_LOG_FILE, line, 'utf8');
+      } catch {
+        /* ignore */
+      }
+      try {
+        applyChatLogStream.end();
       } catch {
         /* ignore */
       }
