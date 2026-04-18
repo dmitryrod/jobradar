@@ -113,6 +113,12 @@ const HARVEST_ENV_KEYS = [
   'HH_SEARCH_JITTER_MAX_MS',
   'HH_POST_LOAD_JITTER_MIN_MS',
   'HH_POST_LOAD_JITTER_MAX_MS',
+  'HH_KEYWORDS_LOGIC',
+  'HH_KEYWORDS_CYCLES',
+  'HH_KEYWORDS_MAX',
+  'HH_WORK_HOURS_ENABLED',
+  'HH_WORK_HOUR_START',
+  'HH_WORK_HOUR_END',
 ];
 
 function harvestEnvForForm() {
@@ -171,13 +177,24 @@ function parseHarvestJsonFromText(text) {
   const seenQ = new Set();
   const seenO = new Set();
   let addedFromEvents = 0;
-  let addedFinal = null;
+  /** Сумма `added` по всем `done` в чанке (при cycles/loop каждый проход шлёт своё `done`) */
+  let sumDoneAdded = 0;
   let urlsTotal = 0;
   let done = false;
+  /** @type {string | null} */
+  let currentKeyword = null;
+  /** Отработанные ключи за прогон: последний в логе — сверху в UI */
+  const keywordsCompleted = [];
   for (const line of text.split('\n')) {
     if (!line.startsWith('HARVEST_JSON ')) continue;
     try {
       const ev = JSON.parse(line.slice('HARVEST_JSON '.length));
+      if (ev.event === 'keyword_active' && typeof ev.keyword === 'string' && ev.keyword.trim()) {
+        currentKeyword = ev.keyword.trim();
+      }
+      if (ev.event === 'keyword_done' && typeof ev.keyword === 'string' && ev.keyword.trim()) {
+        keywordsCompleted.unshift(ev.keyword.trim());
+      }
       if (ev.event === 'url_queued' && ev.url && !seenQ.has(ev.url)) {
         seenQ.add(ev.url);
         urlsQueued.push(ev.url);
@@ -189,15 +206,25 @@ function parseHarvestJsonFromText(text) {
       if (ev.event === 'record_added') addedFromEvents += 1;
       if (ev.event === 'done') {
         done = true;
-        if (ev.added != null) addedFinal = Number(ev.added);
+        if (ev.added != null && ev.added !== '') {
+          sumDoneAdded += Number(ev.added) || 0;
+        }
         if (ev.urlsTotal != null) urlsTotal = Number(ev.urlsTotal) || urlsTotal;
       }
     } catch {
       /* ignore */
     }
   }
-  const addedToQueue = addedFinal != null ? addedFinal : addedFromEvents;
-  return { urlsQueued, urlsOpened, addedToQueue, urlsTotal, done };
+  const addedToQueue = Math.max(addedFromEvents, sumDoneAdded);
+  return {
+    urlsQueued,
+    urlsOpened,
+    addedToQueue,
+    urlsTotal,
+    done,
+    currentKeyword,
+    keywordsCompleted,
+  };
 }
 
 function parseLastHarvestRunStats() {
@@ -278,6 +305,9 @@ const server = http.createServer(async (req, res) => {
       addedToQueue: stats.addedToQueue,
       urlsTotal: stats.urlsTotal,
       done: stats.done,
+      harvestCurrentKeyword: stats.currentKeyword ?? null,
+      harvestKeywordsCompleted: stats.keywordsCompleted ?? [],
+      harvestKeywordsCompletedCount: (stats.keywordsCompleted ?? []).length,
       logRelativePath: rel && !rel.startsWith('..') ? rel : 'data/harvest-run.log',
     });
   }

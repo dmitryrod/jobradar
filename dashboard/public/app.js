@@ -773,12 +773,40 @@ function syncVacancyTabs() {
   });
 }
 
+function syncHarvestKeywordLogicUi() {
+  const sel = harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]');
+  const v = sel?.value || 'cycles';
+  const cyclesLbl = harvestPanelEl.querySelector('.harvest-logic-cycles');
+  const kwLbl = harvestPanelEl.querySelector('.harvest-logic-keywords');
+  if (cyclesLbl) cyclesLbl.hidden = v !== 'cycles';
+  if (kwLbl) kwLbl.hidden = v !== 'keywords';
+}
+
+function syncHarvestWorkHoursUi() {
+  const cb = harvestPanelEl.querySelector('input[type="checkbox"][name="HH_WORK_HOURS_ENABLED"]');
+  const on = !!cb?.checked;
+  harvestPanelEl.querySelectorAll('.harvest-work-hours-range').forEach((el) => {
+    el.hidden = !on;
+  });
+}
+
+harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]')?.addEventListener('change', syncHarvestKeywordLogicUi);
+harvestPanelEl.querySelector('input[name="HH_WORK_HOURS_ENABLED"]')?.addEventListener('change', syncHarvestWorkHoursUi);
+syncHarvestKeywordLogicUi();
+syncHarvestWorkHoursUi();
+
 async function fillHarvestFormFromApi() {
   const { env } = await api('/api/harvest-env');
-  harvestPanelEl.querySelectorAll('.harvest-fields input[name]').forEach((inp) => {
+  harvestPanelEl.querySelectorAll('input[name], select[name]').forEach((inp) => {
+    if (inp.type === 'checkbox') {
+      if (inp.name === 'HH_WORK_HOURS_ENABLED') inp.checked = env[inp.name] === '1';
+      return;
+    }
     const v = env[inp.name];
     if (v != null && v !== '') inp.value = v;
   });
+  syncHarvestKeywordLogicUi();
+  syncHarvestWorkHoursUi();
 }
 
 async function refreshHarvestStats() {
@@ -802,9 +830,23 @@ async function refreshHarvestStats() {
     li.appendChild(a);
     ul.appendChild(li);
   }
+  const kwDone = s.harvestKeywordsCompleted || [];
+  const kwCount = typeof s.harvestKeywordsCompletedCount === 'number' ? s.harvestKeywordsCompletedCount : kwDone.length;
+  const kwCountEl = stats.querySelector('.harvest-keywords-count');
+  if (kwCountEl) kwCountEl.textContent = String(kwCount);
+  const kwUl = stats.querySelector('.harvest-keywords-list');
+  if (kwUl) {
+    kwUl.innerHTML = '';
+    for (const phrase of kwDone) {
+      const li = document.createElement('li');
+      li.textContent = phrase;
+      kwUl.appendChild(li);
+    }
+  }
   const meta = stats.querySelector('.harvest-stats-meta');
   if (s.running) {
-    meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${s.startedAt || ''}`;
+    const kw = s.harvestCurrentKeyword ? String(s.harvestCurrentKeyword) : '—';
+    meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${s.startedAt || ''} · текущее ключевое слово в работе: ${kw}`;
   } else if (s.exitAt != null) {
     meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${s.exitAt}`;
   } else {
@@ -866,10 +908,38 @@ vacancyTabsEl.querySelectorAll('.tab').forEach((btn) => {
 
 harvestPanelEl.querySelector('.btn-harvest-start')?.addEventListener('click', async () => {
   const payload = {};
-  harvestPanelEl.querySelectorAll('.harvest-fields input[name]').forEach((inp) => {
+  const logic = harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]')?.value || 'cycles';
+  const harvestExclude = new Set([
+    'HH_KEYWORDS_LOGIC',
+    'HH_KEYWORDS_CYCLES',
+    'HH_KEYWORDS_MAX',
+    'HH_WORK_HOURS_ENABLED',
+    'HH_WORK_HOUR_START',
+    'HH_WORK_HOUR_END',
+  ]);
+  harvestPanelEl.querySelectorAll('input[name], select[name]').forEach((inp) => {
+    if (inp.type === 'checkbox') return;
+    if (harvestExclude.has(inp.name)) return;
     const t = inp.value.trim();
     if (t !== '') payload[inp.name] = t;
   });
+  payload.HH_KEYWORDS_LOGIC = logic;
+  if (logic === 'cycles') {
+    payload.HH_KEYWORDS_CYCLES =
+      harvestPanelEl.querySelector('input[name="HH_KEYWORDS_CYCLES"]')?.value.trim() || '1';
+  }
+  if (logic === 'keywords') {
+    const k = harvestPanelEl.querySelector('input[name="HH_KEYWORDS_MAX"]')?.value.trim();
+    payload.HH_KEYWORDS_MAX = k || '0';
+  }
+  const whcb = harvestPanelEl.querySelector('input[name="HH_WORK_HOURS_ENABLED"]');
+  payload.HH_WORK_HOURS_ENABLED = whcb?.checked ? '1' : '0';
+  if (whcb?.checked) {
+    payload.HH_WORK_HOUR_START =
+      harvestPanelEl.querySelector('input[name="HH_WORK_HOUR_START"]')?.value.trim() || '9';
+    payload.HH_WORK_HOUR_END =
+      harvestPanelEl.querySelector('input[name="HH_WORK_HOUR_END"]')?.value.trim() || '18';
+  }
   try {
     await api('/api/harvest-start', { method: 'POST', body: JSON.stringify(payload) });
     showToast('Запущен harvest (поиск, парсинг, оценка LLM)', 'good');

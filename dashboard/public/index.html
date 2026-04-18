@@ -23,9 +23,40 @@
       </div>
       <section id="harvest-panel" class="harvest-panel" hidden>
         <p class="harvest-lead">
-          Один запуск = <code>harvest</code> (поиск по ключам из <code>config/search-keywords.txt</code>, парсинг, оценка LLM). Значения ниже передаются в процесс и
-          <strong>перекрывают</strong> одноимённые переменные из <code>.env</code>.
+          Параметры ниже передаются в <code>harvest</code> и <strong>перекрывают</strong> одноимённые переменные из <code>.env</code>. Один «проход» — поиск по ключам (см. логику ниже), сбор ссылок до лимита сессии, парсинг карточек, оценка LLM.
         </p>
+        <div class="harvest-fields harvest-fields-logic">
+          <label class="harvest-field harvest-field-block">
+            <span class="harvest-field-label">Логика работы с ключевыми словами</span>
+            <select name="HH_KEYWORDS_LOGIC" class="harvest-select">
+              <option value="loop">Зациклить</option>
+              <option value="cycles" selected>Задать количество циклов</option>
+              <option value="keywords">Задать количество ключевых слов</option>
+            </select>
+          </label>
+          <label class="harvest-field harvest-logic-cycles">
+            Число циклов (полный список ключей за цикл)
+            <input type="number" name="HH_KEYWORDS_CYCLES" min="1" max="999" step="1" value="1" title="HH_KEYWORDS_CYCLES" />
+          </label>
+          <label class="harvest-field harvest-logic-keywords" hidden>
+            Ключевых слов за один проход (с начала файла)
+            <input type="number" name="HH_KEYWORDS_MAX" min="1" max="999" step="1" placeholder="все" title="HH_KEYWORDS_MAX, пусто = весь файл" />
+          </label>
+        </div>
+        <div class="harvest-fields harvest-fields-workhours">
+          <label class="harvest-field harvest-field-checkbox">
+            <input type="checkbox" name="HH_WORK_HOURS_ENABLED" value="1" />
+            Задать интервал рабочего времени
+          </label>
+          <label class="harvest-field harvest-work-hours-range" hidden>
+            Начало рабочего времени (час, 0–23)
+            <input type="number" name="HH_WORK_HOUR_START" min="0" max="23" step="1" value="9" />
+          </label>
+          <label class="harvest-field harvest-work-hours-range" hidden>
+            Конец рабочего времени (час, 0–23, включительно)
+            <input type="number" name="HH_WORK_HOUR_END" min="0" max="23" step="1" value="18" />
+          </label>
+        </div>
         <div class="harvest-fields">
           <label class="harvest-field"
             >HH_PER_KEYWORD_LIMIT <input type="number" name="HH_PER_KEYWORD_LIMIT" min="1" max="30" step="1" /></label
@@ -58,10 +89,16 @@
             <strong class="harvest-stat-added">0</strong>
           </p>
           <p class="harvest-stats-meta muted"></p>
-          <details class="harvest-urls-details">
-            <summary>Список открытых ссылок (<span class="harvest-urls-count">0</span>)</summary>
-            <ul class="harvest-urls-list"></ul>
-          </details>
+          <div class="harvest-stats-lists">
+            <details class="harvest-urls-details">
+              <summary>Список открытых ссылок (<span class="harvest-urls-count">0</span>)</summary>
+              <ul class="harvest-urls-list"></ul>
+            </details>
+            <details class="harvest-keywords-details">
+              <summary>Список отработанных ключевых слов (<span class="harvest-keywords-count">0</span>)</summary>
+              <ul class="harvest-keywords-list"></ul>
+            </details>
+          </div>
           <p class="harvest-log-hint muted"></p>
         </div>
       </section>

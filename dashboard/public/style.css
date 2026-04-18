@@ -153,13 +153,34 @@ h1 {
   color: var(--muted);
 }
 
-.harvest-field input {
+.harvest-field input,
+.harvest-field select {
   padding: 0.35rem 0.5rem;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
   font-size: 0.88rem;
+}
+
+.harvest-field-block {
+  grid-column: 1 / -1;
+}
+
+.harvest-field-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.harvest-field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.harvest-field-checkbox input {
+  width: auto;
+  margin: 0;
 }
 
 .harvest-actions {
@@ -201,11 +222,28 @@ h1 {
   color: var(--muted);
 }
 
-.harvest-urls-details {
+.harvest-stats-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
   margin-top: 0.65rem;
+  align-items: start;
 }
 
-.harvest-urls-list {
+@media (max-width: 720px) {
+  .harvest-stats-lists {
+    grid-template-columns: 1fr;
+  }
+}
+
+.harvest-urls-details,
+.harvest-keywords-details {
+  margin: 0;
+  min-width: 0;
+}
+
+.harvest-urls-list,
+.harvest-keywords-list {
   max-height: 14rem;
   overflow: auto;
   font-size: 0.78rem;
@@ -216,6 +254,10 @@ h1 {
 .harvest-urls-list a {
   color: var(--accent);
   word-break: break-all;
+}
+
+.harvest-keywords-list li {
+  word-break: break-word;
 }
 
 .collect-hint {

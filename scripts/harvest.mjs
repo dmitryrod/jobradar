@@ -5,7 +5,15 @@
  * Флаги: --skip-llm | --skip-gemini — без вызова LLM (score=0).
  *
  * События для дашборда: строки `HARVEST_JSON {...}` в stdout (пишутся в data/harvest-run.log при запуске из UI).
- * После успешного прогона первая строка config/search-keywords.txt переносится в конец (HH_ROTATE_KEYWORD_AFTER_RUN=0 — отключить).
+ * `keyword_done` — ключ отработан на этапе поиска/сбора ссылок (список в UI с новыми сверху).
+ * После успешного прохода первая строка config/search-keywords.txt переносится в конец (HH_ROTATE_KEYWORD_AFTER_RUN=0 — отключить).
+ *
+ * HH_KEYWORDS_LOGIC:
+ *   loop — без остановки повторять проходы (весь список ключей в каждом проходе);
+ *   cycles — HH_KEYWORDS_CYCLES проходов подряд;
+ *   keywords — один проход, в поиске только первые HH_KEYWORDS_MAX ключей (пусто = все).
+ *
+ * HH_WORK_HOURS_ENABLED=1 — вне интервала HH_WORK_HOUR_START–HH_WORK_HOUR_END (часы, включительно) пауза без целевых действий.
  */
 
 import { chromium } from 'playwright';
@@ -25,6 +33,7 @@ import { hasLlmApiKey } from '../lib/llm-chat.mjs';
 import { scoreVacancyWithOpenRouter } from '../lib/openrouter-score.mjs';
 import { addVacancyRecord, knownVacancyIds } from '../lib/store.mjs';
 import { rotateSearchKeywordFirstToEnd } from '../lib/rotate-search-keyword.mjs';
+import { isWithinWorkHoursNow } from '../lib/harvest-work-hours.mjs';
 
 const DEFAULT_KEYWORDS_FILE = path.join(ROOT, 'config', 'search-keywords.txt');
 
@@ -46,12 +55,39 @@ const keywordsPath = path.resolve(
   (process.env.HH_KEYWORDS_FILE || '').trim() || DEFAULT_KEYWORDS_FILE
 );
 
+function parseKeywordsLogic() {
+  const raw = (process.env.HH_KEYWORDS_LOGIC || 'cycles').trim().toLowerCase();
+  if (raw === 'loop' || raw === 'cycles' || raw === 'keywords') return raw;
+  return 'cycles';
+}
+
+function parseCyclesCount() {
+  return Math.max(1, Math.floor(Number(process.env.HH_KEYWORDS_CYCLES || 1) || 1));
+}
+
+/** Сколько первых ключей взять в режиме keywords (пустой env = весь файл). */
+function keywordTakeCount(allLen) {
+  const raw = process.env.HH_KEYWORDS_MAX;
+  if (raw == null || String(raw).trim() === '') return allLen;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return allLen;
+  return Math.min(allLen, Math.floor(n));
+}
+
 function randomIntInclusive(min, max) {
   return Math.floor(min + Math.random() * (max - min + 1));
 }
 
 function sleepMs(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function waitForWorkHours() {
+  if (process.env.HH_WORK_HOURS_ENABLED !== '1') return;
+  while (!isWithinWorkHoursNow(process.env)) {
+    harvestEvent({ event: 'idle_work_hours', message: 'Вне интервала рабочего времени, ожидание…' });
+    await sleepMs(60_000);
+  }
 }
 
 function looksLikeLoginUrl(url) {
@@ -96,8 +132,173 @@ function harvestEvent(obj) {
   console.log(`HARVEST_JSON ${JSON.stringify(obj)}`);
 }
 
+/**
+ * Один проход: сбор URL по ключам → обход карточек.
+ * @returns {{ shouldRotate: boolean, added: number, urlsTotal: number }}
+ */
+async function runHarvestPass(page, keywords, cvBundle, prefs) {
+  await waitForWorkHours();
+  const seenIds = knownVacancyIds();
+  const urls = [];
+  const globalSeen = new Set();
+
+  for (const key of keywords) {
+    await waitForWorkHours();
+    if (urls.length >= sessionLimit) break;
+    harvestEvent({ event: 'keyword_active', keyword: key, phase: 'search' });
+    await page.goto(buildSearchUrl(key), { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await sleepMs(randomIntInclusive(searchJitterMin, searchJitterMax));
+    const found = await collectVacancyUrls(page);
+    let n = 0;
+    for (const u of found) {
+      if (urls.length >= sessionLimit) break;
+      if (n >= perKeyLimit) break;
+      const id = vacancyIdFromUrl(u);
+      if (!id || globalSeen.has(id) || seenIds.has(id)) continue;
+      globalSeen.add(id);
+      urls.push({ url: u, query: key });
+      harvestEvent({ event: 'url_queued', url: u, vacancyId: id });
+      n++;
+    }
+    console.log(`Ключ «${key}»: +${n} URL (в очереди на обход ${urls.length})`);
+    harvestEvent({ event: 'keyword_done', keyword: key });
+  }
+
+  if (!urls.length) {
+    console.log('Нет новых ссылок (все уже в очереди или пустая выдача).');
+    harvestEvent({ event: 'done', added: 0, urlsTotal: 0 });
+    return { shouldRotate: true, added: 0, urlsTotal: 0 };
+  }
+
+  let added = 0;
+  for (let i = 0; i < urls.length; i++) {
+    await waitForWorkHours();
+    if (i > 0) {
+      const pause = randomIntInclusive(openDelayMin, openDelayMax);
+      console.log(`Пауза ${pause} мс…`);
+      await sleepMs(pause);
+    }
+
+    const { url, query } = urls[i];
+    const vacancyId = vacancyIdFromUrl(url);
+    console.log(`Парсинг ${i + 1}/${urls.length}`, url);
+
+    harvestEvent({ event: 'keyword_active', keyword: query, phase: 'card' });
+    harvestEvent({ event: 'url_opened', url, vacancyId });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await sleepMs(randomIntInclusive(postLoadMin, postLoadMax));
+    const parsed = await parseVacancyPage(page);
+
+    const filter = runHardFilters(parsed, prefs);
+    if (!filter.pass) {
+      console.log(`  SKIP [${filter.stage}]: ${filter.reason}`);
+      logSkipped({
+        vacancyId,
+        url,
+        query,
+        stage: filter.stage,
+        reason: filter.reason,
+        title: parsed.title,
+      });
+      continue;
+    }
+
+    let llm = {
+      score: 0,
+      scoreVacancy: 0,
+      scoreCvMatch: 0,
+      scoreOverall: 0,
+      summary: skipLlm ? '(LLM отключён — npm run harvest -- --skip-llm)' : '',
+      risks: '',
+      matchCv: 'unknown',
+      tags: [],
+      providerModel: null,
+    };
+
+    if (!skipLlm) {
+      try {
+        llm = await scoreVacancyWithOpenRouter(
+          {
+            title: parsed.title,
+            company: parsed.company,
+            salaryRaw: parsed.salaryRaw,
+            description: parsed.description,
+            url,
+          },
+          cvBundle,
+          prefs
+        );
+        console.log(
+          `  LLM (${llm.llmProvider || '?'}): итог ${llm.scoreOverall} (вакансия ${llm.scoreVacancy}, CV ${llm.scoreCvMatch}) — ${llm.providerModel || '?'}`
+        );
+      } catch (e) {
+        console.error('  LLM error:', e.message);
+        llm.summary = `Ошибка LLM: ${e.message}`;
+      }
+    }
+
+    const record = {
+      id: crypto.randomUUID(),
+      vacancyId,
+      url,
+      searchQuery: query,
+      title: parsed.title,
+      company: parsed.company,
+      salaryRaw: parsed.salaryRaw,
+      salaryEstimate: filter.salaryEstimate,
+      remoteNote: filter.remoteReason,
+      salaryNote: filter.salaryReason,
+      descriptionPreview: parsed.description.slice(0, 600),
+      descriptionForLlm: parsed.description.slice(0, 6000),
+      vacancyDescriptionFull: parsed.vacancyDescriptionFull || parsed.description,
+      hhWorkConditions: Array.isArray(parsed.workConditionsLines) ? parsed.workConditionsLines : [],
+      llmProvider: skipLlm ? 'skipped' : llm.llmProvider || 'openrouter',
+      openRouterModel: llm.providerModel || null,
+      scoreVacancy: llm.scoreVacancy,
+      scoreCvMatch: llm.scoreCvMatch,
+      scoreOverall: llm.scoreOverall,
+      geminiScore: llm.scoreOverall ?? llm.score,
+      geminiSummary: llm.summary,
+      geminiRisks: llm.risks,
+      geminiMatchCv: llm.matchCv,
+      geminiTags: llm.tags,
+      status: 'pending',
+      feedbackReason: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+    };
+
+    if (addVacancyRecord(record)) {
+      added++;
+      harvestEvent({ event: 'record_added', url, vacancyId });
+      console.log('  → В очередь дашборда');
+    } else {
+      console.log('  → Уже была в очереди, пропуск');
+    }
+  }
+
+  harvestEvent({ event: 'done', added, urlsTotal: urls.length });
+  console.log(`\nПроход завершён. Новых записей в очереди: ${added}.`);
+  return { shouldRotate: true, added, urlsTotal: urls.length };
+}
+
+function rotateIfEnabled() {
+  if (process.env.HH_ROTATE_KEYWORD_AFTER_RUN === '0') return;
+  try {
+    const r = rotateSearchKeywordFirstToEnd(keywordsPath);
+    if (r.ok) {
+      console.log('Первая строка в config/search-keywords.txt перенесена в конец (следующий проход — другой порядок ключей).');
+    } else if (r.reason) {
+      console.warn('Ротация ключей пропущена:', r.reason);
+    }
+  } catch (e) {
+    console.error('Ротация ключей:', e.message);
+  }
+}
+
 async function main() {
   const prefs = loadPreferences();
+  const logic = parseKeywordsLogic();
 
   if (!skipLlm && !hasLlmApiKey()) {
     console.error('Нужен POLZA_API_KEY (или POLZA_AI_API_KEY) или OpenRouter_API_KEY в .env или .env.local');
@@ -110,14 +311,7 @@ async function main() {
     process.exit(1);
   }
 
-  const keywords = loadSearchKeywords(keywordsPath);
-  if (!keywords.length) {
-    console.error('Нет ключей в', keywordsPath);
-    process.exit(1);
-  }
-
-  const profile = sessionProfilePath();
-  if (!fs.existsSync(profile)) {
+  if (!fs.existsSync(sessionProfilePath())) {
     console.error('Нет профиля Chromium. Сначала: npm run login');
     process.exit(1);
   }
@@ -129,14 +323,12 @@ async function main() {
     process.exit(1);
   }
 
-  const ctx = await chromium.launchPersistentContext(profile, {
+  const ctx = await chromium.launchPersistentContext(sessionProfilePath(), {
     headless,
     viewport: { width: 1280, height: 800 },
     locale: 'ru-RU',
   });
   const page = ctx.pages()[0] || (await ctx.newPage());
-
-  let shouldRotateKeywords = false;
 
   try {
     await page.goto('https://hh.ru/applicant', { waitUntil: 'domcontentloaded', timeout: 60_000 });
@@ -146,158 +338,55 @@ async function main() {
       process.exit(1);
     }
 
-    const seenIds = knownVacancyIds();
-    const urls = [];
-    const globalSeen = new Set();
-
-    for (const key of keywords) {
-      if (urls.length >= sessionLimit) break;
-      await page.goto(buildSearchUrl(key), { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await sleepMs(randomIntInclusive(searchJitterMin, searchJitterMax));
-      const found = await collectVacancyUrls(page);
-      let n = 0;
-      for (const u of found) {
-        if (urls.length >= sessionLimit) break;
-        if (n >= perKeyLimit) break;
-        const id = vacancyIdFromUrl(u);
-        if (!id || globalSeen.has(id) || seenIds.has(id)) continue;
-        globalSeen.add(id);
-        urls.push({ url: u, query: key });
-        harvestEvent({ event: 'url_queued', url: u, vacancyId: id });
-        n++;
-      }
-      console.log(`Ключ «${key}»: +${n} URL (в очереди на обход ${urls.length})`);
-    }
-
-    if (!urls.length) {
-      console.log('Нет новых ссылок (все уже в очереди или пустая выдача).');
-      harvestEvent({ event: 'done', added: 0, urlsTotal: 0 });
-      shouldRotateKeywords = true;
-      return;
-    }
-
-    let added = 0;
-    for (let i = 0; i < urls.length; i++) {
-      if (i > 0) {
-        const pause = randomIntInclusive(openDelayMin, openDelayMax);
-        console.log(`Пауза ${pause} мс…`);
-        await sleepMs(pause);
-      }
-
-      const { url, query } = urls[i];
-      const vacancyId = vacancyIdFromUrl(url);
-      console.log(`Парсинг ${i + 1}/${urls.length}`, url);
-
-      harvestEvent({ event: 'url_opened', url, vacancyId });
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await sleepMs(randomIntInclusive(postLoadMin, postLoadMax));
-      const parsed = await parseVacancyPage(page);
-
-      const filter = runHardFilters(parsed, prefs);
-      if (!filter.pass) {
-        console.log(`  SKIP [${filter.stage}]: ${filter.reason}`);
-        logSkipped({
-          vacancyId,
-          url,
-          query,
-          stage: filter.stage,
-          reason: filter.reason,
-          title: parsed.title,
-        });
-        continue;
-      }
-
-      let llm = {
-        score: 0,
-        scoreVacancy: 0,
-        scoreCvMatch: 0,
-        scoreOverall: 0,
-        summary: skipLlm ? '(LLM отключён — npm run harvest -- --skip-llm)' : '',
-        risks: '',
-        matchCv: 'unknown',
-        tags: [],
-        providerModel: null,
-      };
-
-      if (!skipLlm) {
-        try {
-          llm = await scoreVacancyWithOpenRouter(
-            {
-              title: parsed.title,
-              company: parsed.company,
-              salaryRaw: parsed.salaryRaw,
-              description: parsed.description,
-              url,
-            },
-            cvBundle,
-            prefs
-          );
-          console.log(
-            `  LLM (${llm.llmProvider || '?'}): итог ${llm.scoreOverall} (вакансия ${llm.scoreVacancy}, CV ${llm.scoreCvMatch}) — ${llm.providerModel || '?'}`
-          );
-        } catch (e) {
-          console.error('  LLM error:', e.message);
-          llm.summary = `Ошибка LLM: ${e.message}`;
+    if (logic === 'loop') {
+      console.log('Режим ключей: зацикливание (остановка — завершите процесс harvest).');
+      let pass = 0;
+      while (true) {
+        pass++;
+        await waitForWorkHours();
+        const all = loadSearchKeywords(keywordsPath);
+        if (!all.length) {
+          console.error('Нет ключей в', keywordsPath);
+          process.exit(1);
         }
-      }
-
-      const record = {
-        id: crypto.randomUUID(),
-        vacancyId,
-        url,
-        searchQuery: query,
-        title: parsed.title,
-        company: parsed.company,
-        salaryRaw: parsed.salaryRaw,
-        salaryEstimate: filter.salaryEstimate,
-        remoteNote: filter.remoteReason,
-        salaryNote: filter.salaryReason,
-        descriptionPreview: parsed.description.slice(0, 600),
-        descriptionForLlm: parsed.description.slice(0, 6000),
-        vacancyDescriptionFull: parsed.vacancyDescriptionFull || parsed.description,
-        hhWorkConditions: Array.isArray(parsed.workConditionsLines) ? parsed.workConditionsLines : [],
-        llmProvider: skipLlm ? 'skipped' : llm.llmProvider || 'openrouter',
-        openRouterModel: llm.providerModel || null,
-        scoreVacancy: llm.scoreVacancy,
-        scoreCvMatch: llm.scoreCvMatch,
-        scoreOverall: llm.scoreOverall,
-        geminiScore: llm.scoreOverall ?? llm.score,
-        geminiSummary: llm.summary,
-        geminiRisks: llm.risks,
-        geminiMatchCv: llm.matchCv,
-        geminiTags: llm.tags,
-        status: 'pending',
-        feedbackReason: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: null,
-      };
-
-      if (addVacancyRecord(record)) {
-        added++;
-        harvestEvent({ event: 'record_added', url, vacancyId });
-        console.log('  → В очередь дашборда');
-      } else {
-        console.log('  → Уже была в очереди, пропуск');
+        harvestEvent({ event: 'pass_start', pass, logic: 'loop', keywordsTotal: all.length });
+        const r = await runHarvestPass(page, all, cvBundle, prefs);
+        if (r.shouldRotate) rotateIfEnabled();
       }
     }
 
-    harvestEvent({ event: 'done', added, urlsTotal: urls.length });
-    shouldRotateKeywords = true;
-    console.log(`\nГотово. Новых записей в очереди: ${added}. Запустите: npm run dashboard`);
+    if (logic === 'cycles') {
+      const cyclesLeft = parseCyclesCount();
+      console.log(`Режим ключей: ${cyclesLeft} проход(ов) по полному списку ключей.`);
+      for (let pass = 1; pass <= cyclesLeft; pass++) {
+        await waitForWorkHours();
+        const all = loadSearchKeywords(keywordsPath);
+        if (!all.length) {
+          console.error('Нет ключей в', keywordsPath);
+          process.exit(1);
+        }
+        harvestEvent({ event: 'pass_start', pass, logic: 'cycles', passTotal: cyclesLeft, keywordsTotal: all.length });
+        const r = await runHarvestPass(page, all, cvBundle, prefs);
+        if (r.shouldRotate) rotateIfEnabled();
+      }
+      console.log('Готово. Запустите: npm run dashboard');
+    } else if (logic === 'keywords') {
+      await waitForWorkHours();
+      const all = loadSearchKeywords(keywordsPath);
+      if (!all.length) {
+        console.error('Нет ключей в', keywordsPath);
+        process.exit(1);
+      }
+      const take = keywordTakeCount(all.length);
+      const slice = all.slice(0, take);
+      console.log(`Режим ключей: один проход по первым ${slice.length} ключам (в файле ${all.length}).`);
+      harvestEvent({ event: 'pass_start', pass: 1, logic: 'keywords', keywordsTotal: slice.length });
+      const r = await runHarvestPass(page, slice, cvBundle, prefs);
+      if (r.shouldRotate) rotateIfEnabled();
+      console.log('Готово. Запустите: npm run dashboard');
+    }
   } finally {
     await ctx.close();
-    if (shouldRotateKeywords && process.env.HH_ROTATE_KEYWORD_AFTER_RUN !== '0') {
-      try {
-        const r = rotateSearchKeywordFirstToEnd(keywordsPath);
-        if (r.ok) {
-          console.log('Первая строка в config/search-keywords.txt перенесена в конец (следующий запуск — другой порядок ключей).');
-        } else if (r.reason) {
-          console.warn('Ротация ключей пропущена:', r.reason);
-        }
-      } catch (e) {
-        console.error('Ротация ключей:', e.message);
-      }
-    }
   }
 }
 

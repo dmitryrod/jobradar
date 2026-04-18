@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "bootstrap": "node scripts/bootstrap.mjs",
-    "test": "node --test tests/paths.test.mjs tests/store.test.mjs tests/score-tooltip-clamp.test.mjs tests/rotate-search-keyword.test.mjs",
+    "test": "node --test tests/paths.test.mjs tests/store.test.mjs tests/score-tooltip-clamp.test.mjs tests/rotate-search-keyword.test.mjs tests/harvest-work-hours.test.mjs",
     "login": "node scripts/login.mjs",
     "apply": "node scripts/apply.mjs",
     "scan-tg": "node scripts/scan-telegram.mjs",
