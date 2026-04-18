@@ -9,8 +9,10 @@
   <body>
     <header class="top">
       <div class="top-row">
-        <h1>Очередь вакансий</h1>
-        <span id="harvest-badge" class="harvest-badge" hidden>Идёт сбор вакансий…</span>
+        <div class="top-heading">
+          <h1>Очередь вакансий</h1>
+          <span id="harvest-badge" class="harvest-badge" hidden>Идёт сбор вакансий…</span>
+        </div>
         <button type="button" class="btn btn-log-apply" title="Последние строки лога Playwright (Отклик в браузере)">
           Лог отклика hh
         </button>
@@ -76,6 +78,10 @@
           <button type="button" class="btn btn-harvest-start">Старт поиска</button>
         </div>
         <div class="harvest-stats">
+          <p class="harvest-stats-line harvest-stats-line-current-kw">
+            <span class="harvest-stat-label">Текущее ключевое слово в работе:</span>
+            <strong class="harvest-stat-current-keyword">—</strong>
+          </p>
           <p class="harvest-stats-line">
             <span class="harvest-stat-label">Уникальных ссылок в очереди на обход:</span>
             <strong class="harvest-stat-queued">0</strong>

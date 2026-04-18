@@ -5,7 +5,6 @@ const tpl = document.getElementById('card-tpl');
 
 const vacancyTabsEl = document.querySelector('.vacancy-tabs');
 const harvestPanelEl = document.getElementById('harvest-panel');
-const harvestBadgeEl = document.getElementById('harvest-badge');
 
 /** @type {'queue' | 'collect'} */
 let viewMode = 'queue';
@@ -764,6 +763,7 @@ function renderCard(item) {
 }
 
 function syncVacancyTabs() {
+  if (!vacancyTabsEl) return;
   vacancyTabsEl.querySelectorAll('.tab').forEach((b) => {
     if (b.dataset.tab === 'collect') {
       b.classList.toggle('active', viewMode === 'collect');
@@ -774,6 +774,7 @@ function syncVacancyTabs() {
 }
 
 function syncHarvestKeywordLogicUi() {
+  if (!harvestPanelEl) return;
   const sel = harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]');
   const v = sel?.value || 'cycles';
   const cyclesLbl = harvestPanelEl.querySelector('.harvest-logic-cycles');
@@ -783,6 +784,7 @@ function syncHarvestKeywordLogicUi() {
 }
 
 function syncHarvestWorkHoursUi() {
+  if (!harvestPanelEl) return;
   const cb = harvestPanelEl.querySelector('input[type="checkbox"][name="HH_WORK_HOURS_ENABLED"]');
   const on = !!cb?.checked;
   harvestPanelEl.querySelectorAll('.harvest-work-hours-range').forEach((el) => {
@@ -790,12 +792,15 @@ function syncHarvestWorkHoursUi() {
   });
 }
 
-harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]')?.addEventListener('change', syncHarvestKeywordLogicUi);
-harvestPanelEl.querySelector('input[name="HH_WORK_HOURS_ENABLED"]')?.addEventListener('change', syncHarvestWorkHoursUi);
-syncHarvestKeywordLogicUi();
-syncHarvestWorkHoursUi();
+if (harvestPanelEl) {
+  harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]')?.addEventListener('change', syncHarvestKeywordLogicUi);
+  harvestPanelEl.querySelector('input[name="HH_WORK_HOURS_ENABLED"]')?.addEventListener('change', syncHarvestWorkHoursUi);
+  syncHarvestKeywordLogicUi();
+  syncHarvestWorkHoursUi();
+}
 
 async function fillHarvestFormFromApi() {
+  if (!harvestPanelEl) return;
   const { env } = await api('/api/harvest-env');
   harvestPanelEl.querySelectorAll('input[name], select[name]').forEach((inp) => {
     if (inp.type === 'checkbox') {
@@ -810,25 +815,43 @@ async function fillHarvestFormFromApi() {
 }
 
 async function refreshHarvestStats() {
-  const s = await api('/api/harvest-status');
-  if (harvestBadgeEl) harvestBadgeEl.hidden = !s.running;
+  let s;
+  try {
+    s = await api('/api/harvest-status');
+  } catch {
+    return;
+  }
+  const badge = document.getElementById('harvest-badge');
+  if (badge) badge.hidden = !s.running;
+  if (!harvestPanelEl) return;
   const stats = harvestPanelEl.querySelector('.harvest-stats');
   if (!stats) return;
-  stats.querySelector('.harvest-stat-queued').textContent = String(s.uniqueUrlsQueued ?? 0);
-  stats.querySelector('.harvest-stat-opened').textContent = String(s.uniqueUrlsOpened ?? 0);
-  stats.querySelector('.harvest-stat-added').textContent = String(s.addedToQueue ?? 0);
-  stats.querySelector('.harvest-urls-count').textContent = String(s.uniqueUrlsOpened ?? 0);
+  const curKwEl = stats.querySelector('.harvest-stat-current-keyword');
+  if (curKwEl) {
+    curKwEl.textContent =
+      s.running && s.harvestCurrentKeyword ? String(s.harvestCurrentKeyword) : '—';
+  }
+  const setHarvestStatText = (sel, val) => {
+    const el = stats.querySelector(sel);
+    if (el) el.textContent = String(val ?? '');
+  };
+  setHarvestStatText('.harvest-stat-queued', s.uniqueUrlsQueued ?? 0);
+  setHarvestStatText('.harvest-stat-opened', s.uniqueUrlsOpened ?? 0);
+  setHarvestStatText('.harvest-stat-added', s.addedToQueue ?? 0);
+  setHarvestStatText('.harvest-urls-count', s.uniqueUrlsOpened ?? 0);
   const ul = stats.querySelector('.harvest-urls-list');
-  ul.innerHTML = '';
-  for (const u of s.urlsOpened || []) {
-    const li = document.createElement('li');
-    const a = document.createElement('a');
-    a.href = u;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.textContent = u;
-    li.appendChild(a);
-    ul.appendChild(li);
+  if (ul) {
+    ul.innerHTML = '';
+    for (const u of s.urlsOpened || []) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = u;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = u;
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
   }
   const kwDone = s.harvestKeywordsCompleted || [];
   const kwCount = typeof s.harvestKeywordsCompletedCount === 'number' ? s.harvestKeywordsCompletedCount : kwDone.length;
@@ -844,19 +867,21 @@ async function refreshHarvestStats() {
     }
   }
   const meta = stats.querySelector('.harvest-stats-meta');
-  if (s.running) {
-    const kw = s.harvestCurrentKeyword ? String(s.harvestCurrentKeyword) : '—';
-    meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${s.startedAt || ''} · текущее ключевое слово в работе: ${kw}`;
-  } else if (s.exitAt != null) {
-    meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${s.exitAt}`;
-  } else {
-    meta.textContent = '';
+  if (meta) {
+    if (s.running) {
+      meta.textContent = `В процессе: pid ${s.pid ?? '—'} · ${s.startedAt || ''}`;
+    } else if (s.exitAt != null) {
+      meta.textContent = `Последний запуск завершён: code ${s.exitCode ?? '—'} · ${s.exitAt}`;
+    } else {
+      meta.textContent = '';
+    }
   }
   const hint = stats.querySelector('.harvest-log-hint');
-  hint.textContent = s.logRelativePath ? `Лог: ${s.logRelativePath}` : '';
+  if (hint) hint.textContent = s.logRelativePath ? `Лог: ${s.logRelativePath}` : '';
 }
 
 async function load() {
+  if (!listEl) return;
   listEl.innerHTML = '';
   if (viewMode === 'collect') {
     listEl.innerHTML =
@@ -890,23 +915,26 @@ async function load() {
   }
 }
 
-vacancyTabsEl.querySelectorAll('.tab').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'collect') {
-      viewMode = 'collect';
-      harvestPanelEl.hidden = false;
-      fillHarvestFormFromApi().catch(() => {});
-    } else {
-      viewMode = 'queue';
-      currentStatus = btn.dataset.status || 'pending';
-      harvestPanelEl.hidden = true;
-    }
-    syncVacancyTabs();
-    load();
+if (vacancyTabsEl) {
+  vacancyTabsEl.querySelectorAll('.tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.tab === 'collect') {
+        viewMode = 'collect';
+        if (harvestPanelEl) harvestPanelEl.hidden = false;
+        fillHarvestFormFromApi().catch(() => {});
+      } else {
+        viewMode = 'queue';
+        currentStatus = btn.dataset.status || 'pending';
+        if (harvestPanelEl) harvestPanelEl.hidden = true;
+      }
+      syncVacancyTabs();
+      load();
+    });
   });
-});
+}
 
-harvestPanelEl.querySelector('.btn-harvest-start')?.addEventListener('click', async () => {
+if (harvestPanelEl) {
+  harvestPanelEl.querySelector('.btn-harvest-start')?.addEventListener('click', async () => {
   const payload = {};
   const logic = harvestPanelEl.querySelector('select[name="HH_KEYWORDS_LOGIC"]')?.value || 'cycles';
   const harvestExclude = new Set([
@@ -947,7 +975,8 @@ harvestPanelEl.querySelector('.btn-harvest-start')?.addEventListener('click', as
   } catch (e) {
     alert(e.message);
   }
-});
+  });
+}
 
 setInterval(() => {
   refreshHarvestStats().catch(() => {});

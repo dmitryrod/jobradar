@@ -171,6 +171,32 @@ function readHarvestLogTail(maxBytes = 400_000) {
   }
 }
 
+/** Хвост от последнего `======== HARVEST_RUN … ========`, до ~48 MiB — чтобы в окне были keyword_done и длинная фаза карточек. */
+function readLastHarvestRunWindow(maxBytes = 48 * 1024 * 1024) {
+  const text = readHarvestLogTail(maxBytes);
+  const needle = '\n======== HARVEST_RUN ';
+  let pos = text.lastIndexOf(needle);
+  if (pos !== -1) return text.slice(pos + 1);
+  const at0 = text.indexOf('======== HARVEST_RUN ');
+  if (at0 !== -1) return text.slice(at0);
+  return text;
+}
+
+/** Windows + detached: родитель может получить `exit` раньше времени — смотрим лог. */
+function harvestStillActiveFromLog(runId) {
+  if (!runId) return false;
+  try {
+    const text = readHarvestLogTail(6 * 1024 * 1024);
+    const marker = `======== HARVEST_RUN ${runId} `;
+    const pos = text.lastIndexOf(marker);
+    if (pos === -1) return false;
+    const after = text.slice(pos);
+    return !after.includes('\n--- harvest exit code=');
+  } catch {
+    return false;
+  }
+}
+
 function parseHarvestJsonFromText(text) {
   const urlsQueued = [];
   const urlsOpened = [];
@@ -185,7 +211,8 @@ function parseHarvestJsonFromText(text) {
   let currentKeyword = null;
   /** Отработанные ключи за прогон: последний в логе — сверху в UI */
   const keywordsCompleted = [];
-  for (const line of text.split('\n')) {
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.replace(/\r$/, '');
     if (!line.startsWith('HARVEST_JSON ')) continue;
     try {
       const ev = JSON.parse(line.slice('HARVEST_JSON '.length));
@@ -228,10 +255,10 @@ function parseHarvestJsonFromText(text) {
 }
 
 function parseLastHarvestRunStats() {
-  const text = readHarvestLogTail(800_000);
+  const windowText = readLastHarvestRunWindow(48 * 1024 * 1024);
   const delim = /\n======== HARVEST_RUN [^\n]+ ========\n/g;
-  const parts = text.split(delim);
-  const lastChunk = parts.length > 1 ? parts[parts.length - 1] : text;
+  const parts = windowText.split(delim);
+  const lastChunk = parts.length > 1 ? parts[parts.length - 1] : windowText;
   return parseHarvestJsonFromText(lastChunk);
 }
 
@@ -291,8 +318,9 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/harvest-status') {
     const stats = parseLastHarvestRunStats();
     const rel = path.relative(ROOT, HARVEST_RUN_LOG_FILE).replace(/\\/g, '/');
+    const running = harvestRun.running || harvestStillActiveFromLog(harvestRun.runId);
     return sendJson(res, 200, {
-      running: harvestRun.running,
+      running,
       runId: harvestRun.runId,
       pid: harvestRun.pid,
       startedAt: harvestRun.startedAt,
@@ -313,7 +341,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && pathname === '/api/harvest-start') {
-    if (harvestRun.running) {
+    if (harvestRun.running || harvestStillActiveFromLog(harvestRun.runId)) {
       return sendJson(res, 409, {
         error: 'Уже выполняется сбор (harvest). Дождитесь завершения или перезапустите дашборд.',
         runId: harvestRun.runId,
