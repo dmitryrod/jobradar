@@ -1,13 +1,3 @@
-ai разработчик
-ai prompt
-ai integrator
-ai manager
-ai developer
-ai technologist
-prompt engineer
-промпт инженер
-промпт разработчик
-инженер по ии
 менеджер по работе с ии
 инженер по внедрению ии
 инженер по автоматизации
@@ -24,3 +14,13 @@ genai архитектор
 ai engineer
 ии инженер
 ai инженер
+ai разработчик
+ai prompt
+ai integrator
+ai manager
+ai developer
+ai technologist
+prompt engineer
+промпт инженер
+промпт разработчик
+инженер по ии
