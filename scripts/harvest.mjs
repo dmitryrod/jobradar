@@ -41,6 +41,7 @@ import { loadCvBundle } from '../lib/cv-load.mjs';
 import { hasLlmApiKey } from '../lib/llm-chat.mjs';
 import { scoreVacancyWithOpenRouter } from '../lib/openrouter-score.mjs';
 import { addVacancyRecord, knownVacancyIds } from '../lib/store.mjs';
+import { applyReviewAutomationForNewRecord } from '../lib/review-automation.mjs';
 import { rotateSearchKeywordFirstToEnd } from '../lib/rotate-search-keyword.mjs';
 import { isWithinWorkHoursNow } from '../lib/harvest-work-hours.mjs';
 
@@ -369,6 +370,11 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
       added++;
       harvestEvent({ event: 'record_added', url, vacancyId });
       console.log('  → В очередь дашборда');
+      try {
+        await applyReviewAutomationForNewRecord(record.id);
+      } catch (e) {
+        console.error('  review-automation:', e?.message || e);
+      }
     } else {
       console.log('  → Уже была в очереди, пропуск');
     }

@@ -34,7 +34,11 @@
     "acceptableCities": [],
     "remoteIsAcceptable": true,
     "penaltyUnknownLocation": 0,
-    "relocationPatterns": ["релокаци", "relocat", "релокация"]
+    "relocationPatterns": [
+      "релокаци",
+      "relocat",
+      "релокация"
+    ]
   },
   "scoringWorkFormat": {
     "prefer": "remote_first",
@@ -48,5 +52,28 @@
     "maxBonusPoints": 3,
     "referenceUsd": 2000
   },
-  "hhApplyChatMaxPerHour": 8
+  "hhApplyChatMaxPerHour": 8,
+  "applicationProfile": {
+    "githubUrl": "",
+    "portfolioUrl": "",
+    "caseStudiesFile": "CV/case-studies.md",
+    "projectLinksFile": "CV/projects.md",
+    "experienceHighlightsFile": "CV/experience-highlights.md",
+    "aiExperienceFile": "CV/ai-experience.md",
+    "screeningChecklistFile": "CV/skills-checklist.md",
+    "employerQuestionAnswersFile": "CV/employer-question-answers.md",
+    "motivationNotesFile": "CV/motivation-notes.md",
+    "telegramUsername": "@idmytry",
+    "salaryExpectation": "",
+    "hourlyRate": "",
+    "targetRoleDirections": [],
+    "availabilityNote": ""
+  },
+  "reviewAutomation": {
+    "targetScore": 96,
+    "autoRejectBelowTarget": false,
+    "autoCoverLetterAtOrAboveTarget": true,
+    "coverLetterScope": "new_and_pending",
+    "coverLetterVariantCount": 1
+  }
 }

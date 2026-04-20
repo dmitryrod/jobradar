@@ -24,7 +24,8 @@ import {
   getVacancyRecord,
   removeVacancyRecord,
 } from '../lib/store.mjs';
-import { loadPreferences } from '../lib/preferences.mjs';
+import { loadPreferences, mergeReviewAutomation, savePreferences } from '../lib/preferences.mjs';
+import { runPendingCoverLetterBatch } from '../lib/review-automation.mjs';
 import { appendFeedback } from '../lib/feedback-context.mjs';
 import { loadCvBundle } from '../lib/cv-load.mjs';
 import { hasLlmApiKey } from '../lib/llm-chat.mjs';
@@ -435,6 +436,56 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { preferences: p });
     } catch (e) {
       return sendJson(res, 500, { error: e.message });
+    }
+  }
+
+  if (req.method === 'GET' && pathname === '/api/review-automation') {
+    try {
+      const p = loadPreferences();
+      return sendJson(res, 200, { reviewAutomation: p.reviewAutomation });
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message });
+    }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/review-automation') {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid JSON' });
+    }
+    if (!body || typeof body !== 'object') {
+      return sendJson(res, 400, { error: 'Нужен объект настроек' });
+    }
+    try {
+      const p = loadPreferences();
+      const merged = mergeReviewAutomation({ ...p.reviewAutomation, ...body });
+      const ts = Number(merged.targetScore);
+      if (!Number.isFinite(ts) || ts < 0 || ts > 100) {
+        return sendJson(res, 400, { error: 'targetScore: число 0–100' });
+      }
+      merged.targetScore = ts;
+      const vc = Math.floor(Number(merged.coverLetterVariantCount));
+      if (!Number.isFinite(vc) || vc < 1 || vc > 10) {
+        return sendJson(res, 400, { error: 'coverLetterVariantCount: целое 1–10' });
+      }
+      merged.coverLetterVariantCount = vc;
+      p.reviewAutomation = merged;
+      savePreferences(p);
+      return sendJson(res, 200, { ok: true, reviewAutomation: merged });
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message || 'save failed' });
+    }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/review-automation/run-pending-cover-letters') {
+    try {
+      const r = await runPendingCoverLetterBatch();
+      const code = r.ok ? 200 : 400;
+      return sendJson(res, code, r);
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message || 'batch failed' });
     }
   }
 
@@ -917,9 +968,13 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: 'Нет текста CV — положите файлы в папку CV/' });
     }
 
+    const prefs = loadPreferences();
+    const ra = mergeReviewAutomation(prefs.reviewAutomation);
+    const variantCount = Math.min(10, Math.max(1, Math.floor(Number(ra.coverLetterVariantCount) || 3)));
+
     let result;
     try {
-      result = await generateCoverLetterVariants(rec, cvBundle);
+      result = await generateCoverLetterVariants(rec, cvBundle, { variantCount });
     } catch (e) {
       return sendJson(res, 502, { error: e.message || 'Ошибка LLM' });
     }
@@ -953,7 +1008,14 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 409, { error: 'Черновик можно править только в статусе «на согласовании»' });
     }
 
-    const normalized = normalizeVariants(rawVariants);
+    const prefs = loadPreferences();
+    const ra = mergeReviewAutomation(prefs.reviewAutomation);
+    const rawLen = Array.isArray(rawVariants) ? rawVariants.length : 0;
+    const variantSlots = Math.min(
+      10,
+      Math.max(rawLen || 1, Math.floor(Number(ra.coverLetterVariantCount) || 3))
+    );
+    const normalized = normalizeVariants(rawVariants, variantSlots);
     const now = new Date().toISOString();
     const prev = rec.coverLetter || {};
     const coverLetter = {

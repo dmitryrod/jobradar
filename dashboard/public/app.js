@@ -5,6 +5,7 @@ const tpl = document.getElementById('card-tpl');
 
 const vacancyTabsEl = document.querySelector('.vacancy-tabs');
 const harvestPanelEl = document.getElementById('harvest-panel');
+const reviewPendingPanelEl = document.getElementById('review-pending-panel');
 
 /** Запомненный выбор requireRemote на вкладке «Сбор вакансий» (приоритет над preferences.json при отображении и при «Старт поиска»). */
 const LS_HARVEST_REQUIRE_REMOTE = 'hhRuHarvestRequireRemote';
@@ -203,11 +204,6 @@ function openDraftModal(item) {
     return;
   }
 
-  while (variants.length < 3) {
-    variants.push(variants[variants.length - 1] || '');
-  }
-  variants.splice(3);
-
   const name = `draft-v-${item.id}`;
   let selectedIndex = 0;
 
@@ -284,7 +280,7 @@ function openDraftModal(item) {
     if (t.name !== name || t.type !== 'radio') return;
     syncTextareaToVariant();
     const idx = Number(t.value);
-    if (!Number.isFinite(idx) || idx < 0 || idx > 2) return;
+    if (!Number.isFinite(idx) || idx < 0 || idx >= draftModalState.variants.length) return;
     draftModalState.selectedIndex = idx;
     ta.value = draftModalState.variants[idx] ?? '';
   });
@@ -873,6 +869,7 @@ if (harvestPanelEl) {
   harvestPanelEl.querySelector('input[name="HARVEST_REQUIRE_REMOTE"]')?.addEventListener('change', (e) => {
     localStorage.setItem(LS_HARVEST_REQUIRE_REMOTE, e.target.checked ? '1' : '0');
   });
+  harvestPanelEl.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]')?.addEventListener('change', syncRaCollectVisibility);
   syncHarvestKeywordLogicUi();
   syncHarvestWorkHoursUi();
 }
@@ -899,6 +896,73 @@ async function refreshVacancyCounts() {
   } catch {
     /* ignore */
   }
+}
+
+function syncRaCollectVisibility() {
+  if (!harvestPanelEl) return;
+  const on = !!harvestPanelEl.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]')?.checked;
+  const scope = harvestPanelEl.querySelector('.ra-scope-wrap');
+  const variant = harvestPanelEl.querySelector('.ra-variant-wrap');
+  if (scope) scope.hidden = !on;
+  if (variant) variant.hidden = !on;
+}
+
+function syncRaPendingVisibility() {
+  if (!reviewPendingPanelEl) return;
+  const on = !!reviewPendingPanelEl.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]')?.checked;
+  const variant = reviewPendingPanelEl.querySelector('.ra-variant-wrap--pending');
+  if (variant) variant.hidden = !on;
+}
+
+/**
+ * @param {HTMLElement | null} container — #harvest-panel или #review-pending-panel
+ * @param {object} ra — reviewAutomation с API
+ * @param {{ includeScope?: boolean }} opts
+ */
+function applyReviewAutomationToContainer(container, ra, opts = {}) {
+  if (!container || !ra) return;
+  const includeScope = !!opts.includeScope;
+  const ts = container.querySelector('[data-ra="targetScore"]');
+  if (ts) ts.value = String(ra.targetScore ?? 70);
+  const ar = container.querySelector('[data-ra="autoRejectBelowTarget"]');
+  if (ar) ar.checked = !!ra.autoRejectBelowTarget;
+  const ac = container.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]');
+  if (ac) ac.checked = !!ra.autoCoverLetterAtOrAboveTarget;
+  if (includeScope) {
+    const sc = container.querySelector('[data-ra="coverLetterScope"]');
+    if (sc) sc.value = ra.coverLetterScope === 'new_and_pending' ? 'new_and_pending' : 'new_only';
+  }
+  const vc = container.querySelector('[data-ra="coverLetterVariantCount"]');
+  if (vc) vc.value = String(ra.coverLetterVariantCount ?? 3);
+  if (container === harvestPanelEl) syncRaCollectVisibility();
+  else syncRaPendingVisibility();
+}
+
+async function fillReviewAutomationForm() {
+  try {
+    const { reviewAutomation: ra } = await api('/api/review-automation');
+    if (harvestPanelEl) applyReviewAutomationToContainer(harvestPanelEl, ra, { includeScope: true });
+    if (reviewPendingPanelEl) applyReviewAutomationToContainer(reviewPendingPanelEl, ra, { includeScope: false });
+  } catch {
+    /* ignore */
+  }
+}
+
+async function refreshReviewAutomationPendingPanel() {
+  if (!reviewPendingPanelEl) return;
+  try {
+    const { reviewAutomation: ra } = await api('/api/review-automation');
+    applyReviewAutomationToContainer(reviewPendingPanelEl, ra, { includeScope: false });
+  } catch {
+    /* ignore */
+  }
+}
+
+function syncReviewPendingPanelVisibility() {
+  if (!reviewPendingPanelEl) return;
+  const show = viewMode === 'queue' && currentStatus === 'pending';
+  reviewPendingPanelEl.hidden = !show;
+  if (show) refreshReviewAutomationPendingPanel().catch(() => {});
 }
 
 async function fillHarvestFormFromApi() {
@@ -990,6 +1054,7 @@ async function load() {
     listEl.innerHTML =
       '<p class="empty collect-hint">Очередь на соседних вкладках. Сбор после «Старт поиска» идёт в фоне — смотрите индикатор в шапке и блок статистики выше.</p>';
     await countsPromise;
+    syncReviewPendingPanelVisibility();
     return;
   }
   try {
@@ -1029,6 +1094,7 @@ async function load() {
     listEl.innerHTML = `<p class="err">${e.message}</p>`;
   }
   await countsPromise;
+  syncReviewPendingPanelVisibility();
 }
 
 if (vacancyTabsEl) {
@@ -1038,6 +1104,7 @@ if (vacancyTabsEl) {
         viewMode = 'collect';
         if (harvestPanelEl) harvestPanelEl.hidden = false;
         fillHarvestFormFromApi().catch(() => {});
+        fillReviewAutomationForm().catch(() => {});
       } else {
         viewMode = 'queue';
         currentStatus = btn.dataset.status || 'pending';
@@ -1125,7 +1192,92 @@ if (harvestPanelEl) {
       alert(e.message);
     }
   });
+
+  harvestPanelEl.querySelector('.btn-review-automation-save')?.addEventListener('click', async () => {
+    const btn = harvestPanelEl.querySelector('.btn-review-automation-save');
+    const ts = Number(harvestPanelEl.querySelector('[data-ra="targetScore"]')?.value);
+    const vc = Number(harvestPanelEl.querySelector('[data-ra="coverLetterVariantCount"]')?.value);
+    const body = {
+      targetScore: ts,
+      autoRejectBelowTarget: !!harvestPanelEl.querySelector('[data-ra="autoRejectBelowTarget"]')?.checked,
+      autoCoverLetterAtOrAboveTarget: !!harvestPanelEl.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]')
+        ?.checked,
+      coverLetterScope: harvestPanelEl.querySelector('[data-ra="coverLetterScope"]')?.value || 'new_only',
+      coverLetterVariantCount: vc,
+    };
+    btn.disabled = true;
+    try {
+      const data = await api('/api/review-automation', { method: 'POST', body: JSON.stringify(body) });
+      showToast('Настройки автоматизации сохранены', 'good');
+      if (data.reviewAutomation) {
+        applyReviewAutomationToContainer(harvestPanelEl, data.reviewAutomation, { includeScope: true });
+        if (reviewPendingPanelEl) applyReviewAutomationToContainer(reviewPendingPanelEl, data.reviewAutomation, { includeScope: false });
+      }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
 }
+
+reviewPendingPanelEl?.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]')?.addEventListener('change', syncRaPendingVisibility);
+
+reviewPendingPanelEl?.querySelector('.btn-review-automation-save-pending')?.addEventListener('click', async () => {
+  const btn = reviewPendingPanelEl?.querySelector('.btn-review-automation-save-pending');
+  const ts = Number(reviewPendingPanelEl.querySelector('[data-ra="targetScore"]')?.value);
+  const vc = Number(reviewPendingPanelEl.querySelector('[data-ra="coverLetterVariantCount"]')?.value);
+  const body = {
+    targetScore: ts,
+    autoRejectBelowTarget: !!reviewPendingPanelEl.querySelector('[data-ra="autoRejectBelowTarget"]')?.checked,
+    autoCoverLetterAtOrAboveTarget: !!reviewPendingPanelEl.querySelector('[data-ra="autoCoverLetterAtOrAboveTarget"]')
+      ?.checked,
+    coverLetterVariantCount: vc,
+  };
+  if (btn) btn.disabled = true;
+  try {
+    const data = await api('/api/review-automation', { method: 'POST', body: JSON.stringify(body) });
+    showToast('Настройки автоматизации сохранены', 'good');
+    if (data.reviewAutomation) {
+      if (harvestPanelEl) applyReviewAutomationToContainer(harvestPanelEl, data.reviewAutomation, { includeScope: true });
+      applyReviewAutomationToContainer(reviewPendingPanelEl, data.reviewAutomation, { includeScope: false });
+    }
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+reviewPendingPanelEl?.querySelector('.btn-review-pending-batch')?.addEventListener('click', async () => {
+  const btn = reviewPendingPanelEl?.querySelector('.btn-review-pending-batch');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/review-automation/run-pending-cover-letters', {
+      method: 'POST',
+      body: '{}',
+    });
+    const errTail =
+      Array.isArray(r.errors) && r.errors.length
+        ? ` · ошибок: ${r.errors.length}`
+        : '';
+    const rej = Number(r.rejected) || 0;
+    showToast(
+      `Отклонено: ${rej}, сгенерировано черновиков: ${r.generated}, обработано под LLM: ${r.processed}, пропущено: ${r.skipped}${errTail}`,
+      'good',
+    );
+    await load();
+  } catch (e) {
+    const payload = e.payload;
+    const msg =
+      payload && Array.isArray(payload.errors) && payload.errors.length
+        ? payload.errors.map((x) => x.error).join('; ')
+        : e.message;
+    alert(msg);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
 
 setInterval(() => {
   refreshHarvestStats().catch(() => {});
@@ -1133,5 +1285,6 @@ setInterval(() => {
 }, 2000);
 
 syncVacancyTabs();
+syncReviewPendingPanelVisibility();
 load();
 refreshHarvestStats().catch(() => {});

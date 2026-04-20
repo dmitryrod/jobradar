@@ -43,7 +43,7 @@
   "metrics": {
     "sessionsPath": ".cursor/reports",
     "enabled": true,
-    "comment": "Session reports сохраняются в .cursor/reports/session-*.json. Скрипт: node .cursor/scripts/metrics-report.cjs"
+    "comment": "Session reports: .cursor/reports/session-*.json. Запуск: node .cursor/scripts/metrics-report.js (обёртка; логика в metrics-report.cjs)"
   },
   "presentations": {
     "source": "presentations",

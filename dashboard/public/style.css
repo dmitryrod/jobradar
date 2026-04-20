@@ -21,6 +21,15 @@ body {
   line-height: 1.45;
 }
 
+/** Плавный отклик кнопок при наведении (не трогаем opacity у :disabled — задаётся отдельно) */
+button {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
 .top {
   padding: 1.25rem 1.5rem 0.5rem;
   border-bottom: 1px solid var(--border);
@@ -88,6 +97,12 @@ h1 {
   border-color: var(--accent);
 }
 
+.view-tab:hover:not(.active) {
+  color: var(--text);
+  border-color: #3d4a56;
+  background: #1a1e25;
+}
+
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -111,6 +126,16 @@ h1 {
 .tab.active {
   color: var(--text);
   border-color: var(--accent);
+}
+
+.tab:hover:not(.active) {
+  color: var(--text);
+  border-color: #3d4a56;
+  background: #1c2028;
+}
+
+.tab.active:hover {
+  background: rgba(124, 183, 255, 0.08);
 }
 
 .tab-count {
@@ -150,7 +175,13 @@ h1 {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
-  max-width: 56rem;
+  max-width: min(100%, 112rem);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.harvest-panel > .harvest-lead {
+  margin-bottom: 0.65rem;
 }
 
 .harvest-lead {
@@ -158,6 +189,81 @@ h1 {
   color: var(--muted);
   margin: 0 0 1rem;
   line-height: 1.45;
+}
+
+/** Слева: основные поля в 4 колонки; справа: «Автоматизация по score» */
+.harvest-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 17.5rem);
+  gap: 0.45rem 0.85rem;
+  align-items: start;
+}
+
+.harvest-settings-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.32rem 0.45rem;
+  align-items: start;
+}
+
+/** Все label из .harvest-fields попадают в одну общую 4-колоночную сетку */
+.harvest-settings-main > .harvest-fields {
+  display: contents;
+}
+
+.harvest-settings-main > .harvest-actions {
+  grid-column: 1 / -1;
+  margin-bottom: 0.25rem;
+}
+
+.harvest-settings-main > .harvest-stale-hint {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.harvest-settings-main .harvest-field {
+  min-width: 0;
+}
+
+.harvest-settings-main .harvest-field-block {
+  grid-column: 1 / -1;
+}
+
+.harvest-settings-main .harvest-fields-prefs .harvest-field,
+.harvest-settings-main .harvest-fields-workhours > .harvest-field-checkbox {
+  grid-column: 1 / -1;
+}
+
+.harvest-settings-main .harvest-field-checkbox {
+  align-items: flex-start;
+}
+
+@media (max-width: 1100px) {
+  .harvest-settings-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .harvest-settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .harvest-settings-layout .review-automation-collect {
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+    padding: 0.65rem 0 0 !important;
+    margin-top: 0.35rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .harvest-settings-main {
+    grid-template-columns: 1fr;
+  }
 }
 
 .harvest-lead code {
@@ -199,6 +305,13 @@ h1 {
 .harvest-field-label {
   font-size: 0.72rem;
   color: var(--muted);
+}
+
+/** Подсказки: атрибут title на label / span — курсор «справка» */
+#harvest-panel label.harvest-field[title],
+#harvest-panel .harvest-field-label[title],
+.review-automation-collect .review-field span[title] {
+  cursor: help;
 }
 
 .harvest-field-checkbox {
@@ -1072,14 +1185,58 @@ h1 {
   color: var(--good);
 }
 
+.btn.ok:hover:not(:disabled) {
+  background: #3a5f46;
+  box-shadow: 0 0 0 1px rgba(107, 207, 127, 0.35);
+}
+
 .btn.bad {
   background: #4a2d2d;
   color: var(--bad);
 }
 
+.btn.bad:hover:not(:disabled) {
+  background: #5c3838;
+  box-shadow: 0 0 0 1px rgba(240, 128, 128, 0.35);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/** Вторичные кнопки (только класс .btn + служебный модификатор) */
+.btn.btn-review-automation-save,
+.btn.btn-review-automation-save-pending,
+.btn.btn-review-pending-batch,
+.btn.btn-refresh-apply-log,
+.btn.btn-view-approved {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn.btn-review-automation-save:hover:not(:disabled),
+.btn.btn-review-automation-save-pending:hover:not(:disabled),
+.btn.btn-review-pending-batch:hover:not(:disabled),
+.btn.btn-refresh-apply-log:hover:not(:disabled),
+.btn.btn-view-approved:hover:not(:disabled) {
+  background: #1f252d;
+  border-color: rgba(124, 183, 255, 0.55);
+  color: var(--accent);
+}
+
+/** Модалка черновика: «Сохранить правки» без .ok/.bad */
+.modal-draft-actions .btn:not(.ok):not(.bad) {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.modal-draft-actions .btn:not(.ok):not(.bad):hover:not(:disabled) {
+  background: #1f252d;
+  border-color: rgba(124, 183, 255, 0.55);
+  color: var(--accent);
 }
 
 .done-reason {
@@ -1147,4 +1304,224 @@ h1 {
 .toast--neutral {
   background: var(--panel);
   color: var(--text);
+}
+
+.review-pending-panel {
+  margin: 0 1.5rem 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  max-width: min(100%, 112rem);
+  box-sizing: border-box;
+}
+
+/** Панель «На проверке»: заголовок + одна строка полей и кнопок (равномерный gap, без растягивания чекбоксов) */
+.review-pending-settings-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.review-pending-settings-main > .review-panel-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.review-pending-settings-main > .review-panel-lead {
+  font-size: 0.74rem;
+  margin: 0 0 0.35rem;
+  line-height: 1.3;
+}
+
+.review-pending-fixed-mode {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  margin: 0 0 0.35rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--bg);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.review-pending-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  /* row-gap при переносе; column-gap ~20–30px между блоками */
+  row-gap: 0.55rem;
+  column-gap: clamp(20px, 2.8vw, 30px);
+}
+
+.review-pending-toolbar .review-field-pending-target {
+  flex: 0 0 minmax(6.25rem, 8.25rem);
+}
+
+.review-pending-toolbar .review-field-pending-reject,
+.review-pending-toolbar .review-field-pending-cover {
+  flex: 0 1 auto;
+  max-width: min(22rem, 100%);
+}
+
+.review-pending-toolbar .ra-variant-wrap--pending {
+  flex: 0 0 minmax(6.75rem, 9.25rem);
+}
+
+.review-pending-toolbar .btn-review-automation-save-pending,
+.review-pending-toolbar .btn-review-pending-batch {
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
+.review-pending-panel .review-field {
+  font-size: 0.76rem;
+  gap: 0.12rem;
+}
+
+.review-pending-panel .review-field input[type='number'],
+.review-pending-panel .review-field select {
+  padding: 0.28rem 0.4rem;
+  font-size: 0.82rem;
+}
+
+.review-pending-panel .btn-review-pending-batch {
+  margin-top: 0;
+}
+
+.btn-review-automation-save-pending {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.65rem;
+}
+
+#review-pending-panel label[title],
+#review-pending-panel .review-field span[title] {
+  cursor: help;
+}
+
+.review-pending-settings-main .review-field-checkbox {
+  align-items: flex-start;
+}
+
+@media (max-width: 700px) {
+  .review-pending-toolbar .review-field-pending-target,
+  .review-pending-toolbar .review-field-pending-reject,
+  .review-pending-toolbar .review-field-pending-cover,
+  .review-pending-toolbar .ra-variant-wrap--pending {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .review-pending-toolbar .btn-review-automation-save-pending,
+  .review-pending-toolbar .btn-review-pending-batch {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+}
+
+.harvest-settings-layout .review-automation-collect {
+  margin: 0;
+  padding: 0 0 0 0.85rem;
+  border: none;
+  border-left: 1px solid var(--border);
+}
+
+.review-automation-collect .review-panel-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.harvest-settings-layout .review-automation-collect .review-panel-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.review-automation-collect .review-panel-lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.harvest-settings-layout .review-automation-collect .review-panel-lead {
+  margin: 0 0 0.4rem;
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.review-automation-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+  max-width: 36rem;
+}
+
+.harvest-settings-layout .review-automation-fields {
+  gap: 0.32rem;
+  margin-bottom: 0.45rem;
+  max-width: none;
+}
+
+.review-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+}
+
+.harvest-settings-layout .review-field {
+  font-size: 0.76rem;
+  gap: 0.12rem;
+}
+
+.harvest-settings-layout .review-field-checkbox span {
+  line-height: 1.25;
+}
+
+.review-field > span:first-child {
+  color: var(--muted);
+}
+
+.review-field input[type='number'],
+.review-field select {
+  max-width: 12rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.review-field select {
+  max-width: 100%;
+}
+
+.harvest-settings-layout .review-field input[type='number'],
+.harvest-settings-layout .review-field select {
+  padding: 0.28rem 0.4rem;
+  font-size: 0.82rem;
+}
+
+.review-field-checkbox {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.harvest-settings-layout .review-field-checkbox {
+  gap: 0.35rem;
+}
+
+.review-field-checkbox input {
+  margin-top: 0.2rem;
+}
+
+.btn-review-automation-save {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.65rem;
 }

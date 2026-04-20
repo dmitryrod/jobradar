@@ -35,62 +35,147 @@
           <span class="tab-count" data-tab-count="rejected" aria-label="Отклонённых вакансий">0</span>
         </button>
       </div>
+      <section id="review-pending-panel" class="review-pending-panel" hidden>
+        <div class="review-pending-settings-main" aria-label="Автоматизация по score, вкладка На проверке">
+          <h3 class="review-panel-title">Автоматизация по score</h3>
+          <p class="muted review-panel-lead">
+            Общие настройки с вкладкой «Сбор вакансий» (<code>preferences.json</code>). Без пункта «Условие генерации» — на этой вкладке действует один сценарий (см. ниже).
+          </p>
+          <p class="review-pending-fixed-mode muted" title="Кнопка «Запустить» обходит только записи pending без черновика письма и с score не ниже целевого.">
+            <strong>Режим:</strong> только вакансии со статусом «На проверке», <strong>без черновика письма</strong> (ручной батч по очереди, к LLM — по одной карточке за шаг).
+          </p>
+          <div class="review-pending-toolbar">
+            <label class="review-field review-field-pending-target">
+              <span title="Порог из config/preferences.json → reviewAutomation.targetScore. Используется и для автоотклонения (score &lt; порога), и для авточерновика письма (score ≥ порога). Нужна валидная LLM-оценка, не режим skipped."
+                >Целевой score (0–100)</span
+              >
+              <input type="number" data-ra="targetScore" min="0" max="100" step="1" />
+            </label>
+            <label class="review-field review-field-checkbox review-field-pending-reject">
+              <input type="checkbox" data-ra="autoRejectBelowTarget" />
+              <span title="Если включено и итоговый score вакансии ниже целевого — запись сразу переводится в «Отклонённые», поле причины пустое. Не срабатывает без числового score."
+                >Автоотклонение, если score ниже порога</span
+              >
+            </label>
+            <label class="review-field review-field-checkbox review-field-pending-cover">
+              <input type="checkbox" data-ra="autoCoverLetterAtOrAboveTarget" />
+              <span title="При score ≥ целевого и при наличии ключа LLM в .env — автоматически сгенерировать черновик сопроводительного (если ещё нет черновика и утверждённого письма)."
+                >Авточерновик письма при score ≥ порога</span
+              >
+            </label>
+            <label class="review-field ra-variant-wrap ra-variant-wrap--pending" hidden>
+              <span title="Сколько вариантов текста письма запросить у модели за один вызов (1–10). Влияет на ручную генерацию и на авто/батч, где используется эта настройка."
+                >Число вариантов письма (1–10)</span
+              >
+              <input type="number" data-ra="coverLetterVariantCount" min="1" max="10" step="1" />
+            </label>
+            <button type="button" class="btn btn-review-automation-save-pending">Сохранить</button>
+            <button type="button" class="btn btn-review-pending-batch">Запустить</button>
+          </div>
+        </div>
+      </section>
+      <!-- Подписи полей и всплывающие подсказки: правьте текст узлов и атрибут title у label / span (см. docs/USAGE.md, .env.example). -->
       <section id="harvest-panel" class="harvest-panel" hidden>
         <p class="harvest-lead">
           Параметры ниже передаются в <code>harvest</code> и <strong>перекрывают</strong> одноимённые переменные из <code>.env</code>. Один «проход» — поиск по ключам (см. логику ниже), сбор ссылок до лимита сессии, парсинг карточек, оценка LLM.
         </p>
+        <div class="harvest-settings-layout">
+          <div class="harvest-settings-main">
         <div class="harvest-fields harvest-fields-logic">
           <label class="harvest-field harvest-field-block">
-            <span class="harvest-field-label">Логика работы с ключевыми словами</span>
+            <span
+              class="harvest-field-label"
+              title="Файл ключей: config/search-keywords.txt. loop — повторять полный список без остановки (остановка кнопкой «Остановить поиск»). cycles — ровно N полных проходов по списку. keywords — один проход только по первым M строкам (см. HH_KEYWORDS_MAX)."
+              >Логика работы с ключевыми словами</span
+            >
             <select name="HH_KEYWORDS_LOGIC" class="harvest-select">
               <option value="loop">Зациклить</option>
               <option value="cycles" selected>Задать количество циклов</option>
               <option value="keywords">Задать количество ключевых слов</option>
             </select>
           </label>
-          <label class="harvest-field harvest-logic-cycles">
+          <label
+            class="harvest-field harvest-logic-cycles"
+            title="Переменная HH_KEYWORDS_CYCLES: при логике «циклы» — сколько раз подряд пройти весь список ключевых фраз (полный список за один цикл)."
+          >
             Число циклов (полный список ключей за цикл)
-            <input type="number" name="HH_KEYWORDS_CYCLES" min="1" max="999" step="1" value="1" title="HH_KEYWORDS_CYCLES" />
+            <input type="number" name="HH_KEYWORDS_CYCLES" min="1" max="999" step="1" value="1" />
           </label>
-          <label class="harvest-field harvest-logic-keywords" hidden>
+          <label class="harvest-field harvest-logic-keywords" hidden title="HH_KEYWORDS_MAX: при логике «ключевые слова» — сколько первых непустых строк из файла ключей использовать за один проход. Пусто или 0 — весь файл.">
             Ключевых слов за один проход (с начала файла)
-            <input type="number" name="HH_KEYWORDS_MAX" min="1" max="999" step="1" placeholder="все" title="HH_KEYWORDS_MAX, пусто = весь файл" />
+            <input type="number" name="HH_KEYWORDS_MAX" min="1" max="999" step="1" placeholder="все" />
           </label>
         </div>
         <div class="harvest-fields harvest-fields-prefs">
-          <label class="harvest-field harvest-field-checkbox" title="Соответствует requireRemote в config/preferences.json; значение чекбокса передаётся в harvest и перекрывает файл на этот запуск. Выбор запоминается в браузере.">
+          <label
+            class="harvest-field harvest-field-checkbox"
+            title="Передаётся в harvest как HH_REQUIRE_REMOTE на этот запуск и перекрывает config/preferences.json (requireRemote). Включено — отсекаются вакансии без удалёнки/гибрида в тексте по шаблонам из preferences. Выбор чекбокса дополнительно запоминается в localStorage браузера."
+          >
             <input type="checkbox" name="HARVEST_REQUIRE_REMOTE" value="1" />
             Только удалёнка / гибрид (если включено в preferences — жёсткий фильтр по тексту вакансии)
           </label>
         </div>
         <div class="harvest-fields harvest-fields-workhours">
-          <label class="harvest-field harvest-field-checkbox">
+          <label
+            class="harvest-field harvest-field-checkbox"
+            title="HH_WORK_HOURS_ENABLED: если включено, вне интервала часов HH_WORK_HOUR_START…HH_WORK_HOUR_END процесс только ждёт (событие idle_work_hours в логе), не выполняя поиск и открытие карточек. Учёт часов — локальное время ОС; опционально HH_TZ_OFFSET_HOURS в .env."
+          >
             <input type="checkbox" name="HH_WORK_HOURS_ENABLED" value="1" />
             Задать интервал рабочего времени
           </label>
-          <label class="harvest-field harvest-work-hours-range" hidden>
+          <label class="harvest-field harvest-work-hours-range" hidden title="HH_WORK_HOUR_START: час начала рабочего окна (0–23), включительно.">
             Начало рабочего времени (час, 0–23)
             <input type="number" name="HH_WORK_HOUR_START" min="0" max="23" step="1" value="9" />
           </label>
-          <label class="harvest-field harvest-work-hours-range" hidden>
+          <label class="harvest-field harvest-work-hours-range" hidden title="HH_WORK_HOUR_END: час окончания окна (0–23), включительно. Если начало &gt; конца — окно через полночь.">
             Конец рабочего времени (час, 0–23, включительно)
             <input type="number" name="HH_WORK_HOUR_END" min="0" max="23" step="1" value="18" />
           </label>
         </div>
         <div class="harvest-fields">
-          <label class="harvest-field"
+          <label
+            class="harvest-field"
+            title="HH_PER_KEYWORD_LIMIT: максимум вакансий (ссылок), собираемых на одну ключевую фразу за этап поиска по этой фразе."
             >HH_PER_KEYWORD_LIMIT <input type="number" name="HH_PER_KEYWORD_LIMIT" min="1" max="30" step="1" /></label
           >
-          <label class="harvest-field"
-            >HH_SESSION_LIMIT <input type="number" name="HH_SESSION_LIMIT" min="1" max="40" step="1" title="Важнее HH_MAX_TOTAL, если задан" /></label
+          <label
+            class="harvest-field"
+            title="HH_SESSION_LIMIT: лимит открытых/обработанных карточек за один запуск harvest. Если задан, имеет приоритет над HH_MAX_TOTAL."
+            >HH_SESSION_LIMIT <input type="number" name="HH_SESSION_LIMIT" min="1" max="40" step="1" /></label
           >
-          <label class="harvest-field">HH_MAX_TOTAL <input type="number" name="HH_MAX_TOTAL" min="1" max="40" step="1" /></label>
-          <label class="harvest-field">HH_OPEN_DELAY_MIN_MS <input type="number" name="HH_OPEN_DELAY_MIN_MS" min="0" step="100" /></label>
-          <label class="harvest-field">HH_OPEN_DELAY_MAX_MS <input type="number" name="HH_OPEN_DELAY_MAX_MS" min="0" step="100" /></label>
-          <label class="harvest-field">HH_SEARCH_JITTER_MIN_MS <input type="number" name="HH_SEARCH_JITTER_MIN_MS" min="0" step="100" /></label>
-          <label class="harvest-field">HH_SEARCH_JITTER_MAX_MS <input type="number" name="HH_SEARCH_JITTER_MAX_MS" min="0" step="100" /></label>
-          <label class="harvest-field">HH_POST_LOAD_JITTER_MIN_MS <input type="number" name="HH_POST_LOAD_JITTER_MIN_MS" min="0" step="50" /></label>
-          <label class="harvest-field">HH_POST_LOAD_JITTER_MAX_MS <input type="number" name="HH_POST_LOAD_JITTER_MAX_MS" min="0" step="50" /></label>
+          <label class="harvest-field" title="HH_MAX_TOTAL: общий лимит карточек за запуск, если не перекрыт более строгим HH_SESSION_LIMIT."
+            >HH_MAX_TOTAL <input type="number" name="HH_MAX_TOTAL" min="1" max="40" step="1" /></label
+          >
+          <label
+            class="harvest-field"
+            title="HH_OPEN_DELAY_MIN_MS: нижняя граница случайной паузы (мс) перед открытием страницы вакансии; фактическая задержка между MIN и MAX."
+            >HH_OPEN_DELAY_MIN_MS <input type="number" name="HH_OPEN_DELAY_MIN_MS" min="0" step="100" /></label
+          >
+          <label
+            class="harvest-field"
+            title="HH_OPEN_DELAY_MAX_MS: верхняя граница паузы (мс) перед открытием карточки вакансии."
+            >HH_OPEN_DELAY_MAX_MS <input type="number" name="HH_OPEN_DELAY_MAX_MS" min="0" step="100" /></label
+          >
+          <label
+            class="harvest-field"
+            title="HH_SEARCH_JITTER_MIN_MS: минимальная случайная задержка (мс) между действиями в фазе поиска (ввод фразы, клики и т.д.)."
+            >HH_SEARCH_JITTER_MIN_MS <input type="number" name="HH_SEARCH_JITTER_MIN_MS" min="0" step="100" /></label
+          >
+          <label
+            class="harvest-field"
+            title="HH_SEARCH_JITTER_MAX_MS: максимальная случайная задержка (мс) между действиями поиска."
+            >HH_SEARCH_JITTER_MAX_MS <input type="number" name="HH_SEARCH_JITTER_MAX_MS" min="0" step="100" /></label
+          >
+          <label
+            class="harvest-field"
+            title="HH_POST_LOAD_JITTER_MIN_MS: минимальная пауза (мс) после загрузки страницы вакансии, перед парсингом (антибот/естественность)."
+            >HH_POST_LOAD_JITTER_MIN_MS <input type="number" name="HH_POST_LOAD_JITTER_MIN_MS" min="0" step="50" /></label
+          >
+          <label
+            class="harvest-field"
+            title="HH_POST_LOAD_JITTER_MAX_MS: максимальная пауза (мс) после загрузки страницы перед разбором контента."
+            >HH_POST_LOAD_JITTER_MAX_MS <input type="number" name="HH_POST_LOAD_JITTER_MAX_MS" min="0" step="50" /></label
+          >
         </div>
         <div class="harvest-actions">
           <button type="button" class="btn btn-harvest-start">Старт поиска</button>
@@ -106,6 +191,50 @@
         <p class="harvest-stale-hint muted">
           Одной кнопкой «Остановить поиск» создаётся флаг остановки для живого процесса и при необходимости дописывается завершение в лог (как раньше «Сбросить зависшее состояние»).
         </p>
+          </div>
+        <aside class="review-automation-collect" aria-label="Автоматизация по score">
+          <h3 class="review-panel-title">Автоматизация по score</h3>
+          <p class="muted review-panel-lead">
+            Для <strong>новых</strong> карточек после сбора; сводка — на «На проверке».
+          </p>
+          <div class="review-automation-fields">
+            <label class="review-field">
+              <span title="Порог из config/preferences.json → reviewAutomation.targetScore. Используется и для автоотклонения (score &lt; порога), и для авточерновика письма (score ≥ порога). Нужна валидная LLM-оценка, не режим skipped."
+                >Целевой score (0–100)</span
+              >
+              <input type="number" data-ra="targetScore" min="0" max="100" step="1" />
+            </label>
+            <label class="review-field review-field-checkbox">
+              <input type="checkbox" data-ra="autoRejectBelowTarget" />
+              <span title="Если включено и итоговый score вакансии ниже целевого — запись сразу переводится в «Отклонённые», поле причины пустое. Не срабатывает без числового score."
+                >Автоотклонение, если score ниже порога</span
+              >
+            </label>
+            <label class="review-field review-field-checkbox">
+              <input type="checkbox" data-ra="autoCoverLetterAtOrAboveTarget" />
+              <span title="При score ≥ целевого и при наличии ключа LLM в .env — автоматически сгенерировать черновик сопроводительного (если ещё нет черновика и утверждённого письма)."
+                >Авточерновик письма при score ≥ порога</span
+              >
+            </label>
+            <label class="review-field ra-scope-wrap" hidden>
+              <span title="new_only — авточерновик только для новых карточек из harvest. new_and_pending — то же плюс ручной батч на вкладке «На проверке» (кнопка «Запустить»)."
+                >Условие генерации</span
+              >
+              <select data-ra="coverLetterScope">
+                <option value="new_only">Только новые из harvest</option>
+                <option value="new_and_pending">Новые и ручной батч на «На проверке»</option>
+              </select>
+            </label>
+            <label class="review-field ra-variant-wrap" hidden>
+              <span title="Сколько вариантов текста письма запросить у модели за один вызов (1–10). Влияет на ручную генерацию и на авто/батч, где используется эта настройка."
+                >Число вариантов письма (1–10)</span
+              >
+              <input type="number" data-ra="coverLetterVariantCount" min="1" max="10" step="1" />
+            </label>
+          </div>
+          <button type="button" class="btn btn-review-automation-save">Сохранить</button>
+        </aside>
+        </div>
         <div class="harvest-stats">
           <p class="harvest-stats-line">
             <span class="harvest-stat-label">Уникальных ссылок в очереди на обход:</span>
