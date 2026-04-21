@@ -25,24 +25,36 @@ import {
   removeVacancyRecord,
 } from '../lib/store.mjs';
 import { loadPreferences, mergeReviewAutomation, savePreferences } from '../lib/preferences.mjs';
-import { runPendingCoverLetterBatch } from '../lib/review-automation.mjs';
 import { appendFeedback } from '../lib/feedback-context.mjs';
-import { loadCvBundle } from '../lib/cv-load.mjs';
 import { hasLlmApiKey } from '../lib/llm-chat.mjs';
-import { scoreVacancyWithOpenRouter } from '../lib/openrouter-score.mjs';
-import {
-  generateCoverLetterVariants,
-  normalizeVariants,
-} from '../lib/cover-letter-openrouter.mjs';
-import { appendCoverLetterUserEditSnippet } from '../lib/cover-letter-user-edits.mjs';
-import { fetchVacancyTextFromHh } from '../lib/refresh-vacancy-from-hh.mjs';
 import { formatTimestampForDashboard } from '../lib/tz-env.mjs';
+import { readUtf8Body as readBody } from '../lib/read-utf8-body.mjs';
+/** Тяжёлые модули (openrouter, cover-letter, playwright refresh) — только через dynamic import в обработчиках, иначе OOM при старте. */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const STATIC_DIR = path.join(ROOT, 'dashboard', 'public');
-const PORT = Number(process.env.DASHBOARD_PORT || 3849) || 3849;
+function resolveStaticDir() {
+  const candidates = [
+    path.join(ROOT, 'dashboard', 'public'),
+    path.join(ROOT, 'lib', 'dashboard', 'public'),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) return dir;
+    } catch {
+      /* ignore */
+    }
+  }
+  throw new Error(`Не найдена директория статики дашборда. Проверены: ${candidates.join(', ')}`);
+}
+
+const STATIC_DIR = resolveStaticDir();
+const PORT_START = Number(process.env.DASHBOARD_PORT || 3849) || 3849;
+/** Сколько портов подряд пробовать при EADDRINUSE (3849, 3850, …). При `DASHBOARD_STRICT_PORT=1` не используется. */
+const PORT_RANGE = Math.min(50, Math.max(1, Math.floor(Number(process.env.DASHBOARD_PORT_RANGE) || 20)));
+const DASHBOARD_STRICT_PORT = process.env.DASHBOARD_STRICT_PORT === '1';
 /** 127.0.0.1 — только локально; в Docker задайте DASHBOARD_BIND=0.0.0.0 */
 const DASHBOARD_BIND = process.env.DASHBOARD_BIND || '127.0.0.1';
+let listenPort = PORT_START;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -58,9 +70,9 @@ function sendJson(res, code, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(code, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Content-Length': Buffer.byteLength(body),
+    'Content-Length': Buffer.byteLength(body, 'utf8'),
   });
-  res.end(body);
+  res.end(body, 'utf8');
 }
 
 /** Сортировка списка вакансий: scoreSortKey или итог + микродоля по maxUsd. */
@@ -108,18 +120,6 @@ function requestPathname(url) {
   let p = url.pathname || '/';
   if (p !== '/') p = p.replace(/\/+$/, '');
   return p || '/';
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', (c) => {
-      data += c;
-      if (data.length > 2_000_000) reject(new Error('body too large'));
-    });
-    req.on('end', () => resolve(data));
-    req.on('error', reject);
-  });
 }
 
 /** Только эти ключи можно передать в дочерний harvest из UI (whitelist). */
@@ -481,6 +481,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/review-automation/run-pending-cover-letters') {
     try {
+      const { runPendingCoverLetterBatch } = await import('../lib/review-automation.mjs');
       const r = await runPendingCoverLetterBatch();
       const code = r.ok ? 200 : 400;
       return sendJson(res, code, r);
@@ -849,6 +850,7 @@ const server = http.createServer(async (req, res) => {
 
     let parsed;
     try {
+      const { fetchVacancyTextFromHh } = await import('../lib/refresh-vacancy-from-hh.mjs');
       parsed = await fetchVacancyTextFromHh(rec.url);
     } catch (e) {
       return sendJson(res, 502, { error: e.message || 'Не удалось загрузить страницу вакансии' });
@@ -876,6 +878,8 @@ const server = http.createServer(async (req, res) => {
 
     if (hasLlmApiKey()) {
       try {
+        const { loadCvBundle } = await import('../lib/cv-load.mjs');
+        const { scoreVacancyWithOpenRouter } = await import('../lib/openrouter-score.mjs');
         const cvBundle = await loadCvBundle();
         if (!cvBundle.text.trim()) {
           scoreError = 'Нет текста CV в CV/ — оценка пропущена';
@@ -912,6 +916,9 @@ const server = http.createServer(async (req, res) => {
             geminiRisks: llm.risks,
             geminiMatchCv: llm.matchCv,
             geminiTags: llm.tags,
+            employerInstructions: llm.employerInstructions,
+            instructionComplexity: llm.instructionComplexity || 'none',
+            hasEmployerInstructions: !!llm.hasEmployerInstructions,
           });
           scoreUpdated = true;
         }
@@ -959,8 +966,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     let cvBundle;
+    let generateCoverLetterVariants;
     try {
-      cvBundle = await loadCvBundle();
+      const cvMod = await import('../lib/cv-load.mjs');
+      const clMod = await import('../lib/cover-letter-openrouter.mjs');
+      generateCoverLetterVariants = clMod.generateCoverLetterVariants;
+      cvBundle = await cvMod.loadCvBundle();
     } catch (e) {
       return sendJson(res, 500, { error: e.message || 'Не удалось загрузить CV' });
     }
@@ -974,7 +985,7 @@ const server = http.createServer(async (req, res) => {
 
     let result;
     try {
-      result = await generateCoverLetterVariants(rec, cvBundle, { variantCount });
+      result = await generateCoverLetterVariants(rec, cvBundle, { variantCount, prefs });
     } catch (e) {
       return sendJson(res, 502, { error: e.message || 'Ошибка LLM' });
     }
@@ -1007,6 +1018,9 @@ const server = http.createServer(async (req, res) => {
     if (rec.coverLetter?.status !== 'pending') {
       return sendJson(res, 409, { error: 'Черновик можно править только в статусе «на согласовании»' });
     }
+
+    const { normalizeVariants } = await import('../lib/cover-letter-openrouter.mjs');
+    const { appendCoverLetterUserEditSnippet } = await import('../lib/cover-letter-user-edits.mjs');
 
     const prefs = loadPreferences();
     const ra = mergeReviewAutomation(prefs.reviewAutomation);
@@ -1201,12 +1215,52 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-server.listen(PORT, DASHBOARD_BIND, () => {
-  const logUrl =
-    process.env.DASHBOARD_LOG_URL ||
-    `http://127.0.0.1:${PORT}/`;
+server.on('error', (err) => {
+  const code = err && err.code;
+  if (code === 'EADDRINUSE' && !DASHBOARD_STRICT_PORT && listenPort < PORT_START + PORT_RANGE - 1) {
+    const prev = listenPort;
+    listenPort += 1;
+    console.warn('');
+    console.warn(
+      `  Порт ${prev} на ${DASHBOARD_BIND} занят — поднимаю дашборд на ${listenPort} (диапазон ${PORT_START}…${PORT_START + PORT_RANGE - 1}; строго один порт: DASHBOARD_STRICT_PORT=1).`
+    );
+    console.warn('');
+    server.listen(listenPort, DASHBOARD_BIND);
+    return;
+  }
+
+  console.error('');
+  console.error('  Не удалось запустить дашборд:', err.message || String(err));
+  if (code === 'EADDRINUSE') {
+    console.error(
+      `  Порт ${listenPort} на ${DASHBOARD_BIND} уже занят (часто это уже запущенный npm run dashboard, Docker или другой сервис).`
+    );
+    if (DASHBOARD_STRICT_PORT || PORT_RANGE <= 1) {
+      console.error(
+        '  Освободите порт или задайте другой, например: $env:DASHBOARD_PORT=3850; npm run dashboard'
+      );
+    } else {
+      console.error(
+        `  Либо увеличьте диапазон: DASHBOARD_PORT_RANGE=30, либо отключите строгий режим (не задавайте DASHBOARD_STRICT_PORT=1).`
+      );
+    }
+    console.error(
+      `  Найти PID в PowerShell: Get-NetTCPConnection -LocalPort ${listenPort} -State Listen | Select-Object -ExpandProperty OwningProcess`
+    );
+  }
+  console.error('');
+  process.exit(1);
+});
+
+server.listen(listenPort, DASHBOARD_BIND, () => {
+  const addr = server.address();
+  const actualPort = typeof addr === 'object' && addr && Number.isFinite(addr.port) ? addr.port : listenPort;
+  const logUrl = process.env.DASHBOARD_LOG_URL || `http://127.0.0.1:${actualPort}/`;
   console.log('');
   console.log(`  Дашборд → ${logUrl}`);
+  if (actualPort !== PORT_START) {
+    console.log(`  (запрошен был порт ${PORT_START}, слушаю ${actualPort} — предыдущий был занят)`);
+  }
   if (DASHBOARD_BIND === '0.0.0.0' && !process.env.DASHBOARD_LOG_URL) {
     console.log('  (слушает 0.0.0.0 — с другой машины подставьте IP хоста и тот же порт)');
   }

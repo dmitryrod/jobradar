@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-04-21T11:10:21.6006013+03:00",
+  "reportDate": "2026-04-21",
+  "command": "norissk",
+  "workflow": "scaffold",
+  "workflowReason": "Исправление EADDRINUSE при повторном npm run dashboard: обработчик server.on('error') вместо Unhandled error event. Task в сессии недоступен.",
+  "primaryAgent": "gpt-5.4",
+  "taskType": "bugfix",
+  "escalation": false,
+  "subagentsCalled": [],
+  "debuggerCalls": 0,
+  "testsApplicable": false,
+  "testsPassed": null,
+  "reviewerFindings": [],
+  "securityAuditorCalled": false,
+  "documentationCreated": true,
+  "taskSummary": "scripts/dashboard-server.mjs: перед listen добавлен обработчик ошибок с подсказкой по занятому порту и DASHBOARD_PORT. docs/USAGE.md: строка про EADDRINUSE в типовых проблемах."
+}

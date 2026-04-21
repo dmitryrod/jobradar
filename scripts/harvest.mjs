@@ -40,6 +40,7 @@ import { runHardFilters } from '../lib/filters.mjs';
 import { loadCvBundle } from '../lib/cv-load.mjs';
 import { hasLlmApiKey } from '../lib/llm-chat.mjs';
 import { scoreVacancyWithOpenRouter } from '../lib/openrouter-score.mjs';
+import { normalizeEmployerInstructions } from '../lib/employer-instructions.mjs';
 import { addVacancyRecord, knownVacancyIds } from '../lib/store.mjs';
 import { applyReviewAutomationForNewRecord } from '../lib/review-automation.mjs';
 import { rotateSearchKeywordFirstToEnd } from '../lib/rotate-search-keyword.mjs';
@@ -298,6 +299,9 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
       matchCv: 'unknown',
       tags: [],
       providerModel: null,
+      employerInstructions: null,
+      instructionComplexity: 'none',
+      hasEmployerInstructions: false,
     };
 
     if (!skipLlm) {
@@ -360,6 +364,9 @@ async function runHarvestPass(page, keywords, cvBundle, prefs) {
       geminiRisks: llm.risks,
       geminiMatchCv: llm.matchCv,
       geminiTags: llm.tags,
+      employerInstructions: normalizeEmployerInstructions(llm.employerInstructions),
+      instructionComplexity: llm.instructionComplexity || 'none',
+      hasEmployerInstructions: !!llm.hasEmployerInstructions,
       status: 'pending',
       feedbackReason: '',
       createdAt: new Date().toISOString(),

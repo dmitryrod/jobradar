@@ -740,6 +740,72 @@ h1 {
   color: var(--muted);
 }
 
+.employer-apply-hints {
+  margin: 0.55rem 0 0.35rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #3a4a5c;
+  background: rgba(30, 42, 58, 0.45);
+}
+
+.employer-apply-hints[hidden] {
+  display: none !important;
+}
+
+.employer-apply-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9ecfff;
+}
+
+.employer-apply-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.employer-apply-badge {
+  font-size: 0.72rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  background: #273140;
+  color: var(--muted);
+  border: 1px solid #3d4a5c;
+}
+
+.employer-apply-badge--strong {
+  border-color: #5a8fc4;
+  color: #c8e3ff;
+}
+
+.employer-apply-summary {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.employer-apply-raw {
+  font-size: 0.82rem;
+}
+
+.employer-apply-raw summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.employer-apply-pre {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.78rem;
+  max-height: 10rem;
+  overflow: auto;
+  color: var(--muted);
+}
+
 .pending-top-actions {
   display: flex;
   flex-wrap: wrap;

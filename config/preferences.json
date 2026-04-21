@@ -54,8 +54,8 @@
   },
   "hhApplyChatMaxPerHour": 8,
   "applicationProfile": {
-    "githubUrl": "",
-    "portfolioUrl": "",
+    "githubUrl": "https://github.com/dmitryrod",
+    "portfolioUrl": "https://dmitryrod.ru",
     "caseStudiesFile": "CV/case-studies.md",
     "projectLinksFile": "CV/projects.md",
     "experienceHighlightsFile": "CV/experience-highlights.md",
@@ -64,10 +64,17 @@
     "employerQuestionAnswersFile": "CV/employer-question-answers.md",
     "motivationNotesFile": "CV/motivation-notes.md",
     "telegramUsername": "@idmytry",
-    "salaryExpectation": "",
-    "hourlyRate": "",
-    "targetRoleDirections": [],
-    "availabilityNote": ""
+    "salaryExpectation": "По договоренности; зависит от роли, зоны ответственности, формата работы и ожидаемого уровня ownership.",
+    "hourlyRate": "По договоренности; обсуждаю после понимания задач, загрузки и формата сотрудничества.",
+    "targetRoleDirections": [
+      "AI Engineer",
+      "LLM Engineer",
+      "AI Backend Engineer",
+      "RAG Engineer",
+      "Automation / Integration Engineer",
+      "Python Engineer с AI/LLM-фокусом"
+    ],
+    "availabilityNote": "Предпочтительно удаленная работа; также рассматриваю гибрид в Санкт-Петербурге. Без переезда и регулярных командировок."
   },
   "reviewAutomation": {
     "targetScore": 96,

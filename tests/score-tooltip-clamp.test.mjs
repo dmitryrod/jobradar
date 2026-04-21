@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { clampLeftEdge } from '../dashboard/public/score-tooltip-clamp.js';
+import { clampLeftEdge } from '../lib/dashboard/public/score-tooltip-clamp.js';
 
 test('центр в пределах вьюпорта — без сдвига', () => {
   assert.equal(clampLeftEdge(100, 200, 400, 8), 100);

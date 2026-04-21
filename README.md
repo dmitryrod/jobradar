@@ -125,6 +125,8 @@ senior python developer москва удалённо
 
 Для сохранения вашего стиля в письмах положите примеры в `config/cover-letter-style-examples.txt` (несколько писем, разделённых `---`). Шаблон — `config/cover-letter-style-examples.example.txt`.
 
+В **`config/preferences.json`** можно задать объект **`applicationProfile`**: ссылки (GitHub, портфолио), Telegram, ожидания по зарплате и пути к файлам в `CV/` с кейсами и заготовками. Эти данные подмешиваются в промпт при генерации сопроводительного, когда работодатель в тексте вакансии просит ссылки, кейсы или ответы по пунктам (см. также извлечение **`employerInstructions`** при оценке через LLM).
+
 ### 5. LLM для оценки вакансий (опционально)
 
 **Рекомендуется [Polza AI](https://polza.ai/)** (OpenAI-compatible `chat/completions`): добавьте в **`.env`** (шаблон — [`.env.example`](.env.example)):
@@ -167,7 +169,7 @@ npm run harvest
 - **scoreCvMatch** (0–100) — насколько ваше CV покрывает требования
 - **scoreOverall** (0–100) — стоит ли откликаться
 
-Веса скоров настраиваются в `config/preferences.json` (`llmScoreWeights.vacancy` и `llmScoreWeights.cvMatch`).
+Веса скоров настраиваются в `config/preferences.json` (`llmScoreWeights.vacancy` и `llmScoreWeights.cvMatch`). При оценке LLM из текста описания извлекаются **инструкции работодателя к отклику** (`employerInstructions` в `data/vacancies-queue.json`); они учитываются при генерации письма и отображаются на карточке в дашборде.
 
 ### Дашборд
 
@@ -257,6 +259,11 @@ npm run codegen-hh
 | `TELEGRAM_CHAT_ID` | ID чата/канала |
 
 Полный список и значения по умолчанию — в [`.env.example`](.env.example).
+
+## Документация
+
+- [Подробная инструкция](docs/USAGE.md) — установка, дашборд, отклики, типичные проблемы.
+- [История изменений](docs/CHANGELOG.md) — заметные правки поведения и запуска (в т.ч. дашборд и зависимости).
 
 ## Лицензия
 
