@@ -77,10 +77,10 @@
     "availabilityNote": "Предпочтительно удаленная работа; также рассматриваю гибрид в Санкт-Петербурге. Без переезда и регулярных командировок."
   },
   "reviewAutomation": {
-    "targetScore": 96,
-    "autoRejectBelowTarget": false,
+    "targetScore": 20,
+    "autoRejectBelowTarget": true,
     "autoCoverLetterAtOrAboveTarget": true,
-    "coverLetterScope": "new_and_pending",
+    "coverLetterScope": "new_only",
     "coverLetterVariantCount": 1
   }
 }

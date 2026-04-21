@@ -52,6 +52,76 @@ button {
   min-width: 0;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1998;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.settings-backdrop[hidden] {
+  display: none !important;
+}
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1999;
+  width: min(22rem, 100vw);
+  max-width: 100%;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+  padding: 1rem 1.15rem;
+  overflow: auto;
+}
+
+.settings-panel[hidden] {
+  display: none !important;
+}
+
+.settings-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.settings-panel-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.settings-clear-hint {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.settings-clear-hint code {
+  font-size: 0.82em;
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
 h1 {
   margin: 0;
   font-size: 1.35rem;

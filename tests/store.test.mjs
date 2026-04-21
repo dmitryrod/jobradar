@@ -50,3 +50,10 @@ test('saveQueue перезаписывает файл', () => {
   assert.equal(q.length, 1);
   assert.equal(q[0].id, 'x');
 });
+
+test('saveQueue([]) очищает очередь', () => {
+  saveQueue([{ id: 'y', vacancyId: '2', title: 'B', status: 'approved' }]);
+  assert.equal(loadQueue().length, 1);
+  saveQueue([]);
+  assert.deepEqual(loadQueue(), []);
+});

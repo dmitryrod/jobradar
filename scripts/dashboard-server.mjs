@@ -15,11 +15,15 @@ import {
   HH_APPLY_CHAT_LOG_FILE,
   DATA_DIR,
   HARVEST_RUN_LOG_FILE,
+  SKIPPED_FILE,
+  FEEDBACK_FILE,
+  COVER_LETTER_USER_EDITS_FILE,
   getHarvestGracefulStopFile,
 } from '../lib/paths.mjs';
 import { countApplyLaunchesLastHour, recordApplyLaunch } from '../lib/hh-apply-rate.mjs';
 import {
   loadQueue,
+  saveQueue,
   updateVacancyRecord,
   getVacancyRecord,
   removeVacancyRecord,
@@ -388,6 +392,37 @@ const server = http.createServer(async (req, res) => {
   const host = req.headers.host || '127.0.0.1';
   const url = new URL(req.url || '/', `http://${host}`);
   const pathname = requestPathname(url);
+
+  if (req.method === 'POST' && pathname === '/api/data/reset') {
+    try {
+      const raw = await readBody(req);
+      if (raw.trim()) JSON.parse(raw);
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid JSON' });
+    }
+    if (harvestRunActiveForUi()) {
+      return sendJson(res, 409, {
+        error:
+          'Сейчас активен сбор вакансий (harvest) или он отображается как идущий. Остановите поиск, дождитесь завершения — затем повторите очистку. Иначе лог прогона обнуляется некорректно.',
+      });
+    }
+    try {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      saveQueue([]);
+      for (const f of [
+        SKIPPED_FILE,
+        FEEDBACK_FILE,
+        COVER_LETTER_USER_EDITS_FILE,
+        HH_APPLY_CHAT_LOG_FILE,
+        HARVEST_RUN_LOG_FILE,
+      ]) {
+        fs.writeFileSync(f, '', 'utf8');
+      }
+    } catch (e) {
+      return sendJson(res, 500, { error: e instanceof Error ? e.message : 'reset failed' });
+    }
+    return sendJson(res, 200, { ok: true });
+  }
 
   if (req.method === 'GET' && pathname === '/api/vacancy-counts') {
     const q = loadQueue();

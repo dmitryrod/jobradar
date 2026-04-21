@@ -3,19 +3,34 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>hh — очередь вакансий</title>
+    <title>JobRadar — автоматизация поиска вакансий</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <header class="top">
       <div class="top-row">
         <div class="top-heading">
-          <h1>Очередь вакансий</h1>
+          <h1>JobRadar</h1>
           <span id="harvest-badge" class="harvest-badge" hidden>Идёт сбор вакансий…</span>
         </div>
-        <button type="button" class="btn btn-log-apply" title="Последние строки лога Playwright (Отклик в браузере)">
-          Лог отклика hh
-        </button>
+        <div class="top-actions">
+          <button
+            type="button"
+            class="btn-icon btn-settings"
+            title="Настройки"
+            aria-label="Настройки"
+          >
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                fill="currentColor"
+                d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+              />
+            </svg>
+          </button>
+          <button type="button" class="btn btn-log-apply" title="Последние строки лога Playwright (Отклик в браузере)">
+            Лог отклика hh
+          </button>
+        </div>
       </div>
       <div class="tabs vacancy-tabs">
         <button type="button" data-tab="collect" class="tab">
@@ -136,45 +151,45 @@
           <label
             class="harvest-field"
             title="HH_PER_KEYWORD_LIMIT: максимум вакансий (ссылок), собираемых на одну ключевую фразу за этап поиска по этой фразе."
-            >HH_PER_KEYWORD_LIMIT <input type="number" name="HH_PER_KEYWORD_LIMIT" min="1" max="30" step="1" /></label
+            >Максимум вакансий на 1 фразу <input type="number" name="HH_PER_KEYWORD_LIMIT" min="1" max="30" step="1" /></label
           >
           <label
             class="harvest-field"
             title="HH_SESSION_LIMIT: лимит открытых/обработанных карточек за один запуск harvest. Если задан, имеет приоритет над HH_MAX_TOTAL."
-            >HH_SESSION_LIMIT <input type="number" name="HH_SESSION_LIMIT" min="1" max="40" step="1" /></label
+            >Лимит обработанных карточек <input type="number" name="HH_SESSION_LIMIT" min="1" max="40" step="1" /></label
           >
           <label class="harvest-field" title="HH_MAX_TOTAL: общий лимит карточек за запуск, если не перекрыт более строгим HH_SESSION_LIMIT."
-            >HH_MAX_TOTAL <input type="number" name="HH_MAX_TOTAL" min="1" max="40" step="1" /></label
+            >Лимит карточек за запуск <input type="number" name="HH_MAX_TOTAL" min="1" max="40" step="1" /></label
           >
           <label
             class="harvest-field"
             title="HH_OPEN_DELAY_MIN_MS: нижняя граница случайной паузы (мс) перед открытием страницы вакансии; фактическая задержка между MIN и MAX."
-            >HH_OPEN_DELAY_MIN_MS <input type="number" name="HH_OPEN_DELAY_MIN_MS" min="0" step="100" /></label
+            >MIN пауза перед карточкой, мс <input type="number" name="HH_OPEN_DELAY_MIN_MS" min="0" step="100" /></label
           >
           <label
             class="harvest-field"
             title="HH_OPEN_DELAY_MAX_MS: верхняя граница паузы (мс) перед открытием карточки вакансии."
-            >HH_OPEN_DELAY_MAX_MS <input type="number" name="HH_OPEN_DELAY_MAX_MS" min="0" step="100" /></label
+            >MAX пауза перед карточкой, мс <input type="number" name="HH_OPEN_DELAY_MAX_MS" min="0" step="100" /></label
           >
           <label
             class="harvest-field"
             title="HH_SEARCH_JITTER_MIN_MS: минимальная случайная задержка (мс) между действиями в фазе поиска (ввод фразы, клики и т.д.)."
-            >HH_SEARCH_JITTER_MIN_MS <input type="number" name="HH_SEARCH_JITTER_MIN_MS" min="0" step="100" /></label
+            >MIN пауза между действиями, мс<input type="number" name="HH_SEARCH_JITTER_MIN_MS" min="0" step="100" /></label
           >
           <label
             class="harvest-field"
             title="HH_SEARCH_JITTER_MAX_MS: максимальная случайная задержка (мс) между действиями поиска."
-            >HH_SEARCH_JITTER_MAX_MS <input type="number" name="HH_SEARCH_JITTER_MAX_MS" min="0" step="100" /></label
+            >MAX пауза между действиями, мс <input type="number" name="HH_SEARCH_JITTER_MAX_MS" min="0" step="100" /></label
           >
           <label
             class="harvest-field"
             title="HH_POST_LOAD_JITTER_MIN_MS: минимальная пауза (мс) после загрузки страницы вакансии, перед парсингом (антибот/естественность)."
-            >HH_POST_LOAD_JITTER_MIN_MS <input type="number" name="HH_POST_LOAD_JITTER_MIN_MS" min="0" step="50" /></label
+            >MIN пауза после загрузки страницы, мс <input type="number" name="HH_POST_LOAD_JITTER_MIN_MS" min="0" step="50" /></label
           >
           <label
             class="harvest-field"
             title="HH_POST_LOAD_JITTER_MAX_MS: максимальная пауза (мс) после загрузки страницы перед разбором контента."
-            >HH_POST_LOAD_JITTER_MAX_MS <input type="number" name="HH_POST_LOAD_JITTER_MAX_MS" min="0" step="50" /></label
+            >MAX пауза после загрузки страницы, мс <input type="number" name="HH_POST_LOAD_JITTER_MAX_MS" min="0" step="50" /></label
           >
         </div>
         <div class="harvest-actions">
@@ -193,7 +208,7 @@
         </p>
           </div>
         <aside class="review-automation-collect" aria-label="Автоматизация по score">
-          <h3 class="review-panel-title">Автоматизация по score</h3>
+          <h3 class="review-panel-title">Автоматизация отклика</h3>
           <p class="muted review-panel-lead">
             Для <strong>новых</strong> карточек после сбора; сводка — на «На проверке».
           </p>
@@ -365,6 +380,25 @@
         <pre class="apply-log-pre"></pre>
       </div>
     </div>
+    <div id="settings-backdrop" class="settings-backdrop" hidden aria-hidden="true"></div>
+    <aside
+      id="settings-panel"
+      class="settings-panel"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+    >
+      <div class="settings-panel-header">
+        <h2 id="settings-title" class="settings-panel-title">Настройки</h2>
+        <button type="button" class="modal-close btn-settings-close" aria-label="Закрыть">×</button>
+      </div>
+      <p class="settings-clear-hint">
+        <strong>Очистить базу данных</strong> — удалит все записи очереди (на проверке, подходят, отклонённые) и обнулит вспомогательные файлы: пропуски, история откликов/фидбек, правки писем, лог «Отклик в браузере» и лог сбора (harvest).
+        Файл <code>config/preferences.json</code> не трогается.
+      </p>
+      <button type="button" class="btn bad btn-block btn-clear-db">Очистить базу данных</button>
+    </aside>
     <div id="approved-letter-modal" class="modal" hidden>
       <div class="modal-backdrop" data-close-approved-modal></div>
       <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="approved-letter-title">

@@ -30,8 +30,8 @@
 #### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/Steev193/hh-ru-apply.git
-cd hh-ru-apply
+git clone https://github.com/dmitryrod/jobradar.git
+cd jobradar
 ```
 
 #### 2. Установите зависимости
@@ -57,8 +57,8 @@ cp .env.example .env
 #### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/Steev193/hh-ru-apply.git
-cd hh-ru-apply
+git clone https://github.com/dmitryrod/jobradar.git
+cd jobradar
 ```
 
 #### 2. Скопируйте переменные окружения
@@ -317,6 +317,7 @@ npm run harvest
 ## Работа с дашбордом
 
 ```bash
+npm run bootstrap
 npm run dashboard
 ```
 
