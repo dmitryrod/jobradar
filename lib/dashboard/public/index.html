@@ -127,7 +127,7 @@
             title="Передаётся в harvest как HH_REQUIRE_REMOTE на этот запуск и перекрывает config/preferences.json (requireRemote). Включено — отсекаются вакансии без удалёнки/гибрида в тексте по шаблонам из preferences. Выбор чекбокса дополнительно запоминается в localStorage браузера."
           >
             <input type="checkbox" name="HARVEST_REQUIRE_REMOTE" value="1" />
-            Только удалёнка / гибрид (если включено в preferences — жёсткий фильтр по тексту вакансии)
+            Только удалёнка / гибрид
           </label>
         </div>
         <div class="harvest-fields harvest-fields-workhours">
@@ -136,7 +136,7 @@
             title="HH_WORK_HOURS_ENABLED: если включено, вне интервала часов HH_WORK_HOUR_START…HH_WORK_HOUR_END процесс только ждёт (событие idle_work_hours в логе), не выполняя поиск и открытие карточек. Учёт часов — локальное время ОС; опционально HH_TZ_OFFSET_HOURS в .env."
           >
             <input type="checkbox" name="HH_WORK_HOURS_ENABLED" value="1" />
-            Задать интервал рабочего времени
+            Интервал рабочего времени
           </label>
           <label class="harvest-field harvest-work-hours-range" hidden title="HH_WORK_HOUR_START: час начала рабочего окна (0–23), включительно.">
             Начало рабочего времени (час, 0–23)
@@ -155,11 +155,8 @@
           >
           <label
             class="harvest-field"
-            title="HH_SESSION_LIMIT: лимит открытых/обработанных карточек за один запуск harvest. Если задан, имеет приоритет над HH_MAX_TOTAL."
+            title="HH_SESSION_LIMIT: лимит открытых/обработанных карточек за запуск harvest. В .env, если эта переменная не задана, срабатывает запасной HH_MAX_TOTAL (CLI и дочерний процесс читают оба ключа, см. .env.example)."
             >Лимит обработанных карточек <input type="number" name="HH_SESSION_LIMIT" min="1" max="40" step="1" /></label
-          >
-          <label class="harvest-field" title="HH_MAX_TOTAL: общий лимит карточек за запуск, если не перекрыт более строгим HH_SESSION_LIMIT."
-            >Лимит карточек за запуск <input type="number" name="HH_MAX_TOTAL" min="1" max="40" step="1" /></label
           >
           <label
             class="harvest-field"
