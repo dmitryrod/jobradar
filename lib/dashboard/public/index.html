@@ -97,7 +97,7 @@
         <div class="harvest-settings-layout">
           <div class="harvest-settings-main">
         <div class="harvest-fields harvest-fields-logic">
-          <label class="harvest-field harvest-field-block">
+          <label class="harvest-field">
             <span
               class="harvest-field-label"
               title="Файл ключей: config/search-keywords.txt. loop — повторять полный список без остановки (остановка кнопкой «Остановить поиск»). cycles — ровно N полных проходов по списку. keywords — один проход только по первым M строкам (см. HH_KEYWORDS_MAX)."
@@ -120,23 +120,27 @@
             Ключевых слов за один проход (с начала файла)
             <input type="number" name="HH_KEYWORDS_MAX" min="1" max="999" step="1" placeholder="все" />
           </label>
+          <div class="harvest-field-placeholder"></div>
         </div>
         <div class="harvest-fields harvest-fields-prefs">
           <label
-            class="harvest-field harvest-field-checkbox"
-            title="Передаётся в harvest как HH_REQUIRE_REMOTE на этот запуск и перекрывает config/preferences.json (requireRemote). Включено — отсекаются вакансии без удалёнки/гибрида в тексте по шаблонам из preferences. Выбор чекбокса дополнительно запоминается в localStorage браузера."
+            class="harvest-field"
+            title="Передаётся в harvest как HH_REMOTE_TYPE на этот запуск. all — все вакансии; remote_hybrid — удалёнка или гибрид (по умолчанию); office — только офис; vakhata — только вахта. Выбор запоминается в localStorage."
           >
-            <input type="checkbox" name="HARVEST_REQUIRE_REMOTE" value="1" />
-            Только удалёнка / гибрид
+            <span class="harvest-field-label">Тип размещения</span>
+            <select name="HH_REMOTE_TYPE" class="harvest-select">
+              <option value="all">Все</option>
+              <option value="remote_hybrid" selected>Удаленка / гибрид</option>
+              <option value="office">Только офис</option>
+              <option value="vakhata">Только вахта</option>
+            </select>
           </label>
-        </div>
-        <div class="harvest-fields harvest-fields-workhours">
           <label
             class="harvest-field harvest-field-checkbox"
             title="HH_WORK_HOURS_ENABLED: если включено, вне интервала часов HH_WORK_HOUR_START…HH_WORK_HOUR_END процесс только ждёт (событие idle_work_hours в логе), не выполняя поиск и открытие карточек. Учёт часов — локальное время ОС; опционально HH_TZ_OFFSET_HOURS в .env."
           >
             <input type="checkbox" name="HH_WORK_HOURS_ENABLED" value="1" />
-            Интервал рабочего времени
+            Время работы скрипта
           </label>
           <label class="harvest-field harvest-work-hours-range" hidden title="HH_WORK_HOUR_START: час начала рабочего окна (0–23), включительно.">
             Начало рабочего времени (час, 0–23)
@@ -155,7 +159,7 @@
           >
           <label
             class="harvest-field"
-            title="HH_SESSION_LIMIT: лимит открытых/обработанных карточек за запуск harvest. В .env, если эта переменная не задана, срабатывает запасной HH_MAX_TOTAL (CLI и дочерний процесс читают оба ключа, см. .env.example)."
+            title="HH_SESSION_LIMIT: лимит открытых/обработанных карточек за запуск harvest."
             >Лимит обработанных карточек <input type="number" name="HH_SESSION_LIMIT" min="1" max="40" step="1" /></label
           >
           <label
@@ -168,6 +172,8 @@
             title="HH_OPEN_DELAY_MAX_MS: верхняя граница паузы (мс) перед открытием карточки вакансии."
             >MAX пауза перед карточкой, мс <input type="number" name="HH_OPEN_DELAY_MAX_MS" min="0" step="100" /></label
           >
+        </div>
+        <div class="harvest-fields">
           <label
             class="harvest-field"
             title="HH_SEARCH_JITTER_MIN_MS: минимальная случайная задержка (мс) между действиями в фазе поиска (ввод фразы, клики и т.д.)."

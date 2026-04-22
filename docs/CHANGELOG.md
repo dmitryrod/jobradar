@@ -4,6 +4,12 @@
 
 ## 2026-04
 
+### LLM: кириллица и символы «�» в summary/risks
+
+- **`lib/llm-chat.mjs`** — тело ответа провайдера читается через **`arrayBuffer` + `TextDecoder('utf-8')`**; поддержан **`message.content`** как строка или массив блоков `{ type, text }` (OpenAI-совместимый формат).
+- **`lib/openrouter-score.mjs`** — при символе замены U+FFFD в summary/risks выполняется **второй запрос** с уточнением в system prompt; строки проходят **`stripLoneUtf16Surrogates`**.
+- **`lib/llm-text-utf8.mjs`** — общие утилиты нормализации текста от модели.
+
 ### Стабильность дашборда (`npm run dashboard`)
 
 - **`scripts/dashboard-server.mjs`**  
