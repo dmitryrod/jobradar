@@ -1,6 +1,6 @@
 {
-  "minMonthlyUsd": 0,
-  "rubPerUsd": 80,
+  "minMonthlyUsd": 1940,
+  "rubPerUsd": 77,
   "requireRemote": true,
   "allowHybrid": true,
   "allowUnknownSalary": true,
@@ -33,7 +33,7 @@
     "baseCity": "Санкт-Петербург",
     "acceptableCities": [],
     "remoteIsAcceptable": true,
-    "penaltyUnknownLocation": 0,
+    "penaltyUnknownLocation": -10,
     "relocationPatterns": [
       "релокаци",
       "relocat",
@@ -52,6 +52,7 @@
     "maxBonusPoints": 3,
     "referenceUsd": 2000
   },
+  "scoringPublicationTodayBonus": 5,
   "hhApplyChatMaxPerHour": 8,
   "applicationProfile": {
     "githubUrl": "https://github.com/dmitryrod",
@@ -82,5 +83,107 @@
     "autoCoverLetterAtOrAboveTarget": true,
     "coverLetterScope": "new_only",
     "coverLetterVariantCount": 1
+  },
+  "overallScoreWeights": {
+    "llm": 0.65,
+    "profile": 0.35
+  },
+  "profileCriteria": {
+    "version": 1,
+    "rows": [
+      {
+        "id": "salary_meets_min",
+        "enabled": true,
+        "weight": 15,
+        "signMode": "+-",
+        "ban": "off"
+      },
+      {
+        "id": "salary_unknown",
+        "enabled": true,
+        "weight": 9,
+        "signMode": "-",
+        "ban": "off"
+      },
+      {
+        "id": "remote_signals",
+        "enabled": true,
+        "weight": 15,
+        "signMode": "+-",
+        "ban": "off"
+      },
+      {
+        "id": "format_hybrid",
+        "enabled": true,
+        "weight": 5,
+        "signMode": "-",
+        "ban": "off"
+      },
+      {
+        "id": "format_office",
+        "enabled": true,
+        "weight": 0,
+        "signMode": "-",
+        "ban": "ban_if_matches"
+      },
+      {
+        "id": "geo_base_city",
+        "enabled": true,
+        "weight": 15,
+        "signMode": "+-",
+        "ban": "off"
+      },
+      {
+        "id": "geo_acceptable_city",
+        "enabled": false,
+        "weight": 0,
+        "signMode": "+",
+        "ban": "off"
+      },
+      {
+        "id": "geo_remote_compensates",
+        "enabled": true,
+        "weight": 15,
+        "signMode": "+-",
+        "ban": "off"
+      },
+      {
+        "id": "geo_relocation",
+        "enabled": true,
+        "weight": 10,
+        "signMode": "-",
+        "ban": "ban_if_matches"
+      },
+      {
+        "id": "geo_weak_location",
+        "enabled": true,
+        "weight": 1,
+        "signMode": "+",
+        "ban": "off"
+      },
+      {
+        "id": "pub_today",
+        "enabled": true,
+        "weight": 15,
+        "signMode": "+",
+        "ban": "off"
+      },
+      {
+        "id": "text_whitelist",
+        "enabled": false,
+        "weight": 0,
+        "signMode": "+",
+        "ban": "off",
+        "value": ""
+      },
+      {
+        "id": "text_blacklist",
+        "enabled": true,
+        "weight": 0,
+        "signMode": "-",
+        "ban": "ban_if_matches",
+        "value": "senior,Kotlin,Java"
+      }
+    ]
   }
 }

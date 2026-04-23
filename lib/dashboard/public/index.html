@@ -16,6 +16,19 @@
         <div class="top-actions">
           <button
             type="button"
+            class="btn-icon btn-profile"
+            title="Профиль соискателя — критерии и баллы"
+            aria-label="Профиль"
+          >
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                fill="currentColor"
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
             class="btn-icon btn-settings"
             title="Настройки"
             aria-label="Настройки"
@@ -51,8 +64,8 @@
         </button>
       </div>
       <section id="review-pending-panel" class="review-pending-panel" hidden>
-        <div class="review-pending-settings-main" aria-label="Автоматизация по score, вкладка На проверке">
-          <h3 class="review-panel-title">Автоматизация по score</h3>
+        <div class="review-pending-settings-main" aria-label="Фильтр вакансий, вкладка на проверке">
+          <h3 class="review-panel-title">Фильтр вакансий</h3>
           <p class="muted review-panel-lead">
             Общие настройки с вкладкой «Сбор вакансий» (<code>preferences.json</code>). Без пункта «Условие генерации» — на этой вкладке действует один сценарий (см. ниже).
           </p>
@@ -104,8 +117,8 @@
               >Логика работы с ключевыми словами</span
             >
             <select name="HH_KEYWORDS_LOGIC" class="harvest-select">
-              <option value="loop">Зациклить</option>
-              <option value="cycles" selected>Задать количество циклов</option>
+              <option value="loop" selected>Зациклить</option>
+              <option value="cycles">Задать количество циклов</option>
               <option value="keywords">Задать количество ключевых слов</option>
             </select>
           </label>
@@ -196,6 +209,14 @@
           >
         </div>
         <div class="harvest-actions">
+          <input
+            type="checkbox"
+            name="HH_HARVEST_DEBUG"
+            value="1"
+            id="harvest-debug-cb"
+            class="harvest-sr-only"
+            title="HH_HARVEST_DEBUG"
+          />
           <button type="button" class="btn btn-harvest-start">Старт поиска</button>
           <button
             type="button"
@@ -266,7 +287,19 @@
           <div class="harvest-stats-lists">
             <details class="harvest-urls-details">
               <summary>Список открытых ссылок (<span class="harvest-urls-count">0</span>)</summary>
-              <ul class="harvest-urls-list"></ul>
+              <div class="harvest-urls-table-wrap">
+                <table class="harvest-urls-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Ссылка</th>
+                      <th scope="col">Название</th>
+                      <th scope="col">Дата/время</th>
+                      <th scope="col">Действие</th>
+                    </tr>
+                  </thead>
+                  <tbody class="harvest-urls-tbody"></tbody>
+                </table>
+              </div>
             </details>
           </div>
           <p class="harvest-log-hint muted"></p>
@@ -291,6 +324,7 @@
                     <div class="model-info-panel" hidden></div>
                   </div>
                 </div>
+                <div class="score-parts"></div>
               </div>
               <a class="title-link" target="_blank" rel="noopener"></a>
             </div>
@@ -340,14 +374,23 @@
             </div>
             <p class="done-reason"></p>
           </div>
-          <aside class="card-col card-col-conditions" aria-label="Условия работы">
-            <h2 class="card-col-title">Условия работы</h2>
-            <ul class="card-conditions-list"></ul>
-            <p class="card-col-empty card-conditions-empty" hidden>
-              Нет данных — нажмите «обновить» (иконка ↻) рядом с сопроводительным, чтобы подтянуть страницу с hh.ru.
-            </p>
-          </aside>
-          <aside class="card-col card-col-description" aria-label="Описание вакансии">
+          <div class="card-col card-col-middle-stack">
+            <aside class="card-col-panel card-col-conditions" aria-label="Условия работы">
+              <h2 class="card-col-title">Условия работы</h2>
+              <ul class="card-conditions-list"></ul>
+              <p class="card-col-empty card-conditions-empty" hidden>
+                Нет данных — нажмите «обновить» (иконка ↻) рядом с сопроводительным, чтобы подтянуть страницу с hh.ru.
+              </p>
+            </aside>
+            <aside class="card-col-panel card-col-published" aria-label="Дата публикации">
+              <h2 class="card-col-title">Дата публикации</h2>
+              <p class="card-published-text"></p>
+              <p class="card-col-empty card-published-empty" hidden>
+                Нет данных — нажмите «обновить» (иконка ↻), чтобы подтянуть страницу с hh.ru.
+              </p>
+            </aside>
+          </div>
+          <aside class="card-col card-col-panel card-col-description" aria-label="Описание вакансии">
             <h2 class="card-col-title">Описание вакансии</h2>
             <div class="card-description-body"></div>
             <p class="card-col-empty card-description-empty" hidden>Нет текста описания — обновите с hh.ru.</p>
@@ -384,6 +427,43 @@
       </div>
     </div>
     <div id="settings-backdrop" class="settings-backdrop" hidden aria-hidden="true"></div>
+    <div id="profile-backdrop" class="settings-backdrop profile-backdrop" hidden aria-hidden="true"></div>
+    <aside
+      id="profile-panel"
+      class="settings-panel profile-panel"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-title"
+    >
+      <div class="settings-panel-header">
+        <h2 id="profile-title" class="settings-panel-title">Профиль соискателя</h2>
+        <button type="button" class="modal-close btn-profile-close" aria-label="Закрыть">×</button>
+      </div>
+      <p class="muted profile-panel-lead">
+        Критерии вакансии: вес и знак (+ / − / ±) формируют нормализованный profile score 0–100; ban отсекает вакансию в «Отклонённые» с причиной. Сумма весов по <strong>включённым</strong> строкам справочная, не обязана быть 100.
+      </p>
+      <p class="profile-sum-line">
+        Сумма весов (вкл.): <strong class="profile-sum-value">0</strong>
+      </p>
+      <div class="profile-table-wrap">
+        <table class="profile-criteria-table" aria-label="Критерии профиля">
+          <thead>
+            <tr>
+              <th>Вкл</th>
+              <th>Логика</th>
+              <th>Название</th>
+              <th>Значение</th>
+              <th>Вес</th>
+              <th>±</th>
+              <th>Ban</th>
+            </tr>
+          </thead>
+          <tbody id="profile-criteria-tbody"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-block btn-profile-save">Сохранить в config/preferences.json</button>
+    </aside>
     <aside
       id="settings-panel"
       class="settings-panel"
@@ -396,6 +476,20 @@
         <h2 id="settings-title" class="settings-panel-title">Настройки</h2>
         <button type="button" class="modal-close btn-settings-close" aria-label="Закрыть">×</button>
       </div>
+      <p class="settings-debug-hint">
+        <strong>Подробный лог harvest (Debug)</strong> — JSONL в <code>data/harvest-debug.log</code>
+        (остановки, <code>process.exit</code>, ошибки; в записи env секреты маскируются). На запуск
+        передаётся <code>HH_HARVEST_DEBUG=1</code>. Если переменная на сервере не задана, состояние
+        кнопки сохраняется в браузере.
+      </p>
+      <button
+        type="button"
+        class="btn btn-block btn-harvest-debug-toggle settings-harvest-debug-btn"
+        aria-pressed="false"
+        title="Включает HH_HARVEST_DEBUG на следующий запуск сбора (см. data/harvest-debug.log)."
+      >
+        Debug
+      </button>
       <p class="settings-clear-hint">
         <strong>Очистить базу данных</strong> — удалит все записи очереди (на проверке, подходят, отклонённые) и обнулит вспомогательные файлы: пропуски, история откликов/фидбек, правки писем, лог «Отклик в браузере» и лог сбора (harvest).
         Файл <code>config/preferences.json</code> не трогается.

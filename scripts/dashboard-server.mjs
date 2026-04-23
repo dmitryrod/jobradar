@@ -28,11 +28,22 @@ import {
   getVacancyRecord,
   removeVacancyRecord,
 } from '../lib/store.mjs';
-import { loadPreferences, mergeReviewAutomation, savePreferences } from '../lib/preferences.mjs';
+import {
+  loadPreferences,
+  mergeReviewAutomation,
+  savePreferences,
+  applyDashboardPreferencesPatch,
+} from '../lib/preferences.mjs';
+import {
+  PROFILE_CRITERIA_MANIFEST,
+  normalizeProfileRowsFromClient,
+  ensureProfileCriteria,
+} from '../lib/profile-criteria.mjs';
 import { appendFeedback } from '../lib/feedback-context.mjs';
 import { hasLlmApiKey } from '../lib/llm-chat.mjs';
 import { formatTimestampForDashboard } from '../lib/tz-env.mjs';
 import { readUtf8Body as readBody } from '../lib/read-utf8-body.mjs';
+import { HARVEST_FORM_ENV_KEYS as HARVEST_ENV_KEYS } from '../lib/harvest-env-keys.mjs';
 /** Тяжёлые модули (openrouter, cover-letter, playwright refresh) — только через dynamic import в обработчиках, иначе OOM при старте. */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -126,26 +137,7 @@ function requestPathname(url) {
   return p || '/';
 }
 
-/** Только эти ключи можно передать в дочерний harvest из UI (whitelist). */
-const HARVEST_ENV_KEYS = [
-  'HH_PER_KEYWORD_LIMIT',
-  'HH_SESSION_LIMIT',
-  'HH_MAX_TOTAL',
-  'HH_OPEN_DELAY_MIN_MS',
-  'HH_OPEN_DELAY_MAX_MS',
-  'HH_SEARCH_JITTER_MIN_MS',
-  'HH_SEARCH_JITTER_MAX_MS',
-  'HH_POST_LOAD_JITTER_MIN_MS',
-  'HH_POST_LOAD_JITTER_MAX_MS',
-  'HH_KEYWORDS_LOGIC',
-  'HH_KEYWORDS_CYCLES',
-  'HH_KEYWORDS_MAX',
-  'HH_WORK_HOURS_ENABLED',
-  'HH_WORK_HOUR_START',
-  'HH_WORK_HOUR_END',
-  /** 0/1 — перекрывает requireRemote из config/preferences.json на время запуска harvest (дашборд / CLI). */
-  'HH_REQUIRE_REMOTE',
-];
+/** Только эти ключи можно передать в дочерний harvest из UI (whitelist). См. lib/harvest-env-keys.mjs. */
 
 function harvestEnvForForm() {
   const o = {};
@@ -337,6 +329,8 @@ function parseHarvestJsonFromText(text) {
   let currentKeyword = null;
   /** Отработанные ключи за прогон: последний в логе — сверху в UI */
   const keywordsCompleted = [];
+  /** @type {Array<{ url: string, vacancyId: string | null, title: string, at: string | null, outcome: string, detail?: string }>} */
+  const urlOutcomes = [];
   for (const rawLine of text.split('\n')) {
     const line = rawLine.replace(/\r$/, '');
     if (!line.startsWith('HARVEST_JSON ')) continue;
@@ -356,6 +350,16 @@ function parseHarvestJsonFromText(text) {
         seenO.add(ev.url);
         urlsOpened.push(ev.url);
       }
+      if (ev.event === 'url_outcome' && typeof ev.url === 'string' && ev.url) {
+        urlOutcomes.push({
+          url: ev.url,
+          vacancyId: typeof ev.vacancyId === 'string' && ev.vacancyId ? ev.vacancyId : null,
+          title: typeof ev.title === 'string' ? ev.title : '',
+          at: typeof ev.at === 'string' ? ev.at : null,
+          outcome: typeof ev.outcome === 'string' ? ev.outcome : 'unknown',
+          ...(typeof ev.detail === 'string' && ev.detail.trim() ? { detail: ev.detail.trim() } : {}),
+        });
+      }
       if (ev.event === 'record_added') addedFromEvents += 1;
       if (ev.event === 'done') {
         done = true;
@@ -372,6 +376,7 @@ function parseHarvestJsonFromText(text) {
   return {
     urlsQueued,
     urlsOpened,
+    urlOutcomes,
     addedToQueue,
     urlsTotal,
     done,
@@ -474,6 +479,44 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (req.method === 'GET' && pathname === '/api/profile-criteria-manifest') {
+    return sendJson(res, 200, { manifest: PROFILE_CRITERIA_MANIFEST });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/preferences') {
+    let body;
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch {
+      return sendJson(res, 400, { error: 'Invalid JSON' });
+    }
+    const patch = body?.preferences && typeof body.preferences === 'object' ? body.preferences : body;
+    if (!patch || typeof patch !== 'object') {
+      return sendJson(res, 400, { error: 'Нужен объект настроек' });
+    }
+    try {
+      const p = loadPreferences();
+      if (patch.profileCriteria && typeof patch.profileCriteria === 'object') {
+        const rows = normalizeProfileRowsFromClient(patch.profileCriteria.rows);
+        if (!rows) {
+          return sendJson(res, 400, {
+            error: 'profileCriteria.rows: нужен полный список критериев с валидными id',
+          });
+        }
+        p.profileCriteria = {
+          version: Number(patch.profileCriteria.version) || 1,
+          rows,
+        };
+      }
+      applyDashboardPreferencesPatch(p, patch);
+      ensureProfileCriteria(p);
+      savePreferences(p);
+      return sendJson(res, 200, { ok: true, preferences: p });
+    } catch (e) {
+      return sendJson(res, 500, { error: e.message || 'save failed' });
+    }
+  }
+
   if (req.method === 'GET' && pathname === '/api/review-automation') {
     try {
       const p = loadPreferences();
@@ -560,6 +603,7 @@ const server = http.createServer(async (req, res) => {
       exitAtDisplay: formatTimestampForDashboard(harvestRun.exitAt, process.env),
       urlsQueued: stats.urlsQueued,
       urlsOpened: stats.urlsOpened,
+      urlOutcomes: stats.urlOutcomes ?? [],
       uniqueUrlsQueued: stats.urlsQueued.length,
       uniqueUrlsOpened: stats.urlsOpened.length,
       addedToQueue: stats.addedToQueue,
@@ -905,6 +949,8 @@ const server = http.createServer(async (req, res) => {
       descriptionForLlm: desc.slice(0, 6000),
       vacancyDescriptionFull: parsed.vacancyDescriptionFull || desc,
       hhWorkConditions: Array.isArray(parsed.workConditionsLines) ? parsed.workConditionsLines : [],
+      vacancyPublishedLine: String(parsed.vacancyPublishedLine || '').trim(),
+      vacancyPublishedDate: parsed.vacancyPublishedDate ?? null,
       vacancyBodyRefreshedAt: now,
     };
 
@@ -930,6 +976,7 @@ const server = http.createServer(async (req, res) => {
               address: parsed.address || '',
               workConditionsLines: Array.isArray(parsed.workConditionsLines) ? parsed.workConditionsLines : [],
               employment: parsed.employment || '',
+              vacancyPublishedDate: parsed.vacancyPublishedDate ?? null,
             },
             cvBundle,
             prefs
@@ -941,11 +988,17 @@ const server = http.createServer(async (req, res) => {
             scoreCvMatch: llm.scoreCvMatch,
             scoreWorkFormat: llm.scoreWorkFormat,
             scoreLocation: llm.scoreLocation,
+            scoreLlm: llm.scoreLlm,
+            scoreProfile: llm.scoreProfile,
+            scoreLlmWeight: llm.scoreLlmWeight,
+            scoreProfileWeight: llm.scoreProfileWeight,
             scoreOverall: llm.scoreOverall,
             scoreSortKey: llm.scoreSortKey,
             scoreBlendedBeforeDelta: llm.scoreBlendedBeforeDelta,
             scoreRuleDelta: llm.scoreRuleDelta,
             scoreSalaryDelta: llm.scoreSalaryDelta,
+            scorePublicationDelta: llm.scorePublicationDelta,
+            scoreProfileCriteriaDelta: llm.scoreProfileCriteriaDelta ?? 0,
             geminiScore: llm.scoreOverall ?? llm.score,
             geminiSummary: llm.summary,
             geminiRisks: llm.risks,
