@@ -174,5 +174,6 @@ npm run dashboard
 ## Подробная документация
 
 - [`docs/USAGE.md`](docs/USAGE.md) — полный гайд по установке, дашборду, откликам и troubleshooting.
+- [`docs/DESIGN.md`](docs/DESIGN.md) — инвентаризация текущего UI и дизайн-документация для Google Stitch.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — заметные изменения поведения и запуска.
 - [`.env.example`](.env.example) — актуальные переменные окружения и комментарии к ним.

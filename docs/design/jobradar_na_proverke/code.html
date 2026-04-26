@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JobRadar - На проверке</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#601218",
+                        "on-primary": "#00325a",
+                        "background": "#0e1419",
+                        "surface-container-lowest": "#090f13",
+                        "tertiary-fixed-dim": "#ffb3b1",
+                        "surface": "#0e1419",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#93f8a4",
+                        "surface-container-high": "#252b30",
+                        "surface-container-low": "#161c21",
+                        "on-secondary-container": "#adffb7",
+                        "surface-dim": "#0e1419",
+                        "surface-bright": "#343a3f",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#d2e4ff",
+                        "on-background": "#dde3e9",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#dde3e9",
+                        "inverse-primary": "#1660a3",
+                        "primary-container": "#7cb7ff",
+                        "on-secondary-fixed": "#002109",
+                        "secondary-fixed-dim": "#77db8a",
+                        "secondary-container": "#027b36",
+                        "outline-variant": "#414750",
+                        "on-secondary-fixed-variant": "#005322",
+                        "surface-container-highest": "#2f353a",
+                        "inverse-on-surface": "#2b3136",
+                        "secondary": "#77db8a",
+                        "on-secondary": "#003915",
+                        "primary": "#b1d2ff",
+                        "surface-variant": "#2f353a",
+                        "on-tertiary-container": "#7d282b",
+                        "on-tertiary-fixed-variant": "#7f292c",
+                        "primary-fixed-dim": "#a1c9ff",
+                        "on-primary-container": "#00477e",
+                        "tertiary-fixed": "#ffdad8",
+                        "on-error": "#690005",
+                        "tertiary": "#ffbfbd",
+                        "outline": "#8b919b",
+                        "on-tertiary-fixed": "#410007",
+                        "on-surface": "#dde3e9",
+                        "on-primary-fixed-variant": "#004880",
+                        "on-primary-fixed": "#001c37",
+                        "on-surface-variant": "#c1c7d2",
+                        "surface-container": "#1a2025",
+                        "tertiary-container": "#ff9695",
+                        "surface-tint": "#a1c9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "mono-code": ["Space Grotesk"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-code": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0f1114; color: #dde3e9; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f1114; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a3139; border-radius: 2px; }
+        .panel-glow { position: relative; }
+        .panel-glow::after { content: ''; position: absolute; inset: 0; pointer-events: none; border: 1px solid rgba(124, 183, 255, 0.05); }
+    </style>
+</head>
+<body class="font-body-md antialiased overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-slate-900 dark:bg-[#181c22] border-b border-slate-800 dark:border-[#2a3139] sticky top-0 z-50">
+<div class="flex items-center justify-between px-4 h-14 w-full max-w-full">
+<div class="flex items-center gap-8">
+<span class="text-lg font-black tracking-tighter text-blue-400 dark:text-[#7cb7ff] uppercase">JobRadar</span>
+<nav class="hidden md:flex gap-6 h-14 items-center">
+<a class="text-slate-400 dark:text-slate-500 hover:text-slate-200 transition-colors font-inter text-sm tracking-tight font-medium" href="#">Сбор вакансий</a>
+<a class="text-blue-400 dark:text-[#7cb7ff] border-b-2 border-blue-400 dark:border-[#7cb7ff] pb-2 font-inter text-sm tracking-tight font-medium self-end mb-[-2px] h-[calc(100%+2px)] flex items-center" href="#">На проверке</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-slate-200 transition-colors font-inter text-sm tracking-tight font-medium" href="#">Подходят</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-slate-200 transition-colors font-inter text-sm tracking-tight font-medium" href="#">Отклоненные</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-slate-200 transition-colors font-inter text-sm tracking-tight font-medium" href="#">Аналитика</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-slate-200 transition-colors font-inter text-sm tracking-tight font-medium" href="#">История</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer p-2 hover:bg-slate-800 rounded-full transition-all">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+</div>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer p-2 hover:bg-slate-800 rounded-full transition-all">settings</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-[#2a3139]">
+<img alt="Profile" data-alt="close-up portrait of a professional technology specialist in a dark tech-focused environment with soft blue accent lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIyzAFIXwH2RKglROPX9vqjK7_SHk6vJZFH4xoUMOYzoRk6EF5ly0YH4Yb1cNMcm_QxmyE4C82WqM6-hPinLYDW--58sRYOclFNSX8rNDjZo1x_RacFynCHf1T981V3_-SgIymxzCHxm1E8ILHBCdgctPTJdKbqw925-MbJEB2YQOzd4JVmzuUojaGEcQntLGSoMtLxcQJtHr4Ll_BXZoDH0pCwAborOxzOLs7DRbRhRZit87S2_0iSFHurrynRTySNytvlj32rDw"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-[1600px] mx-auto p-4 space-y-4">
+<!-- Filter Panel -->
+<section class="bg-[#181c22] border border-[#2a3139] p-4 rounded shadow-sm">
+<div class="flex flex-wrap items-end justify-between gap-6">
+<div class="flex flex-wrap gap-6 items-end">
+<div class="space-y-2">
+<label class="font-label-caps text-on-surface-variant uppercase">Target Score</label>
+<div class="flex items-center bg-[#0e1419] border border-[#2a3139] rounded px-3 h-10 w-32">
+<input class="bg-transparent border-none focus:ring-0 text-primary-container w-full font-mono-code" type="number" value="85"/>
+<span class="text-slate-500 text-xs">%</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-on-surface-variant uppercase">Auto-Reject Below</label>
+<div class="flex items-center bg-[#0e1419] border border-[#2a3139] rounded px-3 h-10 w-32">
+<input class="bg-transparent border-none focus:ring-0 text-error w-full font-mono-code" type="number" value="40"/>
+<span class="text-slate-500 text-xs">%</span>
+</div>
+</div>
+<div class="flex items-center gap-6 h-10">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="rounded border-[#2a3139] bg-[#0e1419] text-primary-container focus:ring-offset-[#181c22]" type="checkbox"/>
+<span class="font-body-sm text-on-surface">Auto-draft</span>
+</label>
+<div class="h-6 w-px bg-[#2a3139]"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase">Variant Count</span>
+<span class="font-mono-code text-primary">1,248</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="h-10 px-6 border border-[#2a3139] font-label-caps uppercase hover:bg-slate-800 transition-colors">Сохранить</button>
+<button class="h-10 px-6 bg-[#7cb7ff] text-on-primary font-label-caps uppercase hover:bg-blue-300 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+                        Запустить
+                    </button>
+</div>
+</div>
+</section>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[280px]">
+<!-- System Status Log -->
+<section class="lg:col-span-8 bg-[#181c22] border border-[#2a3139] rounded flex flex-col">
+<div class="px-4 py-2 border-b border-[#2a3139] flex items-center justify-between">
+<span class="font-label-caps text-on-surface-variant uppercase flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                        System Status Log
+                    </span>
+<span class="font-mono-code text-[10px] text-slate-500">Uptime: 124h 12m</span>
+</div>
+<div class="flex-1 overflow-y-auto p-3 bg-[#0e1419] font-mono-code text-xs space-y-1 custom-scrollbar">
+<div class="text-slate-500 flex gap-4"><span class="text-blue-500">[14:22:01]</span> <span class="text-secondary">SUCCESS</span> AI Model "Llama-3-70b" processed vacancy #8821. Score: 92%</div>
+<div class="text-slate-500 flex gap-4"><span class="text-blue-500">[14:21:55]</span> <span class="text-on-surface">INFO</span> Fetching new data from LinkedIn API...</div>
+<div class="text-slate-500 flex gap-4"><span class="text-blue-500">[14:21:42]</span> <span class="text-error">WARNING</span> Rate limit reached for Indeed parser. Sleeping for 30s.</div>
+<div class="text-slate-500 flex gap-4"><span class="text-blue-500">[14:21:30]</span> <span class="text-secondary">SUCCESS</span> Pipeline synchronized with Profile v4.1</div>
+<div class="text-slate-500 flex gap-4"><span class="text-blue-500">[14:21:15]</span> <span class="text-on-surface">INFO</span> 12 vacancies moved to "Auto-Reject" (score &lt; 40)</div>
+<div class="text-slate-500 flex gap-4"><span class="text-blue-500">[14:20:55]</span> <span class="text-secondary">SUCCESS</span> Draft generated for "Senior Frontend Engineer" at Stripe.</div>
+</div>
+</section>
+<!-- Pipeline Distribution -->
+<section class="lg:col-span-4 bg-[#181c22] border border-[#2a3139] rounded flex flex-col">
+<div class="px-4 py-2 border-b border-[#2a3139]">
+<span class="font-label-caps text-on-surface-variant uppercase">Pipeline Distribution</span>
+</div>
+<div class="flex-1 p-4 flex flex-col justify-center gap-4">
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-mono-code mb-1">
+<span>High Match (&gt;85)</span>
+<span class="text-secondary">42</span>
+</div>
+<div class="h-2 bg-[#0e1419] rounded-full overflow-hidden">
+<div class="h-full bg-secondary" style="width: 35%"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-mono-code mb-1">
+<span>Review Needed (40-85)</span>
+<span class="text-primary-container">128</span>
+</div>
+<div class="h-2 bg-[#0e1419] rounded-full overflow-hidden">
+<div class="h-full bg-primary-container" style="width: 75%"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-mono-code mb-1">
+<span>Auto-Rejected (&lt;40)</span>
+<span class="text-error">894</span>
+</div>
+<div class="h-2 bg-[#0e1419] rounded-full overflow-hidden">
+<div class="h-full bg-error" style="width: 90%"></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Vacancy List (Full Width Cards) -->
+<div class="space-y-3">
+<!-- Card 1 -->
+<article class="bg-[#181c22] border border-[#2a3139] flex flex-col lg:flex-row hover:border-[#414750] transition-colors group">
+<!-- Score Side -->
+<div class="lg:w-48 bg-[#0e1419] p-4 flex flex-col items-center justify-center border-r border-[#2a3139] shrink-0">
+<div class="relative w-24 h-24 flex items-center justify-center mb-2">
+<svg class="w-full h-full transform -rotate-90">
+<circle cx="48" cy="48" fill="transparent" r="40" stroke="#2a3139" stroke-width="4"></circle>
+<circle cx="48" cy="48" fill="transparent" r="40" stroke="#7cb7ff" stroke-dasharray="251.2" stroke-dashoffset="25.12" stroke-width="4"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-2xl font-black text-primary-container">90</span>
+<span class="font-label-caps text-[10px] text-slate-500 uppercase">Total</span>
+</div>
+</div>
+<div class="grid grid-cols-2 w-full gap-2 text-center">
+<div class="bg-[#181c22] py-1 rounded">
+<div class="text-xs text-secondary font-bold">92</div>
+<div class="text-[9px] uppercase text-slate-500 font-label-caps">LLM</div>
+</div>
+<div class="bg-[#181c22] py-1 rounded">
+<div class="text-xs text-primary-container font-bold">88</div>
+<div class="text-[9px] uppercase text-slate-500 font-label-caps">Prof</div>
+</div>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 p-5 min-w-0">
+<div class="flex justify-between items-start gap-4 mb-3">
+<div class="min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-primary-container/10 text-primary-container text-[10px] px-2 py-0.5 rounded border border-primary-container/20 font-mono-code uppercase">GPT-4-Turbo</span>
+<span class="text-slate-500 text-xs font-mono-code">ID: #v-99218</span>
+</div>
+<h2 class="font-headline-md text-on-surface truncate cursor-pointer hover:text-primary-container transition-colors">Senior Software Engineer (Remote)</h2>
+<div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+<span class="flex items-center gap-1 text-xs text-on-surface-variant"><span class="material-symbols-outlined text-sm">domain</span>TechFlow Systems</span>
+<span class="flex items-center gap-1 text-xs text-secondary font-medium"><span class="material-symbols-outlined text-sm">payments</span>$180k - $240k</span>
+<span class="flex items-center gap-1 text-xs text-slate-500 italic"><span class="material-symbols-outlined text-sm">search</span>"React Developer + Golang"</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-[#2a3139] rounded text-slate-400" title="Refresh Analysis">
+<span class="material-symbols-outlined text-lg">sync</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+<div class="space-y-2">
+<h3 class="font-label-caps text-slate-500 uppercase flex items-center gap-1">Summary <span class="material-symbols-outlined text-xs">auto_awesome</span></h3>
+<p class="text-body-sm text-on-surface leading-relaxed">Компания расширяет core-команду для работы над распределенным хранилищем данных. Требуется опыт с Go и K8s от 5 лет. Стек: Go, React, Kafka.</p>
+</div>
+<div class="space-y-2">
+<h3 class="font-label-caps text-error/80 uppercase flex items-center gap-1">Нюансы <span class="material-symbols-outlined text-xs">warning</span></h3>
+<ul class="text-body-sm text-on-surface space-y-1">
+<li class="flex items-start gap-1"><span class="text-error mt-0.5">•</span> Обязателен опыт с gRPC (в профиле указан косвенно)</li>
+<li class="flex items-start gap-1"><span class="text-error mt-0.5">•</span> Возможны ночные дежурства (On-call)</li>
+</ul>
+</div>
+<div class="space-y-2">
+<h3 class="font-label-caps text-slate-500 uppercase">Instructions</h3>
+<div class="bg-[#0e1419] border border-[#2a3139] p-2 text-[11px] font-mono-code text-slate-400 italic rounded">
+                                "Please include a link to your open-source projects in the cover letter. Do not send generic applications."
+                            </div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">Remote</span>
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">Golang</span>
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">React</span>
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">Full-time</span>
+</div>
+</div>
+<!-- Action Side -->
+<div class="lg:w-72 bg-[#1a2025] border-l border-[#2a3139] p-5 flex flex-col gap-3">
+<button class="w-full bg-primary-container text-on-primary py-2 font-label-caps uppercase rounded text-[11px] hover:brightness-110 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">description</span>
+                        Создать сопроводительное
+                    </button>
+<button class="w-full border border-[#2a3139] text-on-surface py-2 font-label-caps uppercase rounded text-[11px] hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-weight="fill">drafts</span>
+                        Черновик письма
+                    </button>
+<div class="grid grid-cols-2 gap-2 mt-auto">
+<button class="border border-secondary/50 text-secondary py-2 font-label-caps uppercase rounded text-[10px] hover:bg-secondary/10 transition-all">Подходит</button>
+<button class="border border-error/50 text-error py-2 font-label-caps uppercase rounded text-[10px] hover:bg-error/10 transition-all">Не подходит</button>
+</div>
+<textarea class="w-full bg-[#0e1419] border-[#2a3139] text-xs focus:ring-1 focus:ring-primary-container rounded custom-scrollbar h-12 resize-none" placeholder="Причина отказа (опционально)..."></textarea>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-[#181c22] border border-[#2a3139] flex flex-col lg:flex-row hover:border-[#414750] transition-colors group">
+<!-- Score Side -->
+<div class="lg:w-48 bg-[#0e1419] p-4 flex flex-col items-center justify-center border-r border-[#2a3139] shrink-0">
+<div class="relative w-24 h-24 flex items-center justify-center mb-2">
+<svg class="w-full h-full transform -rotate-90">
+<circle cx="48" cy="48" fill="transparent" r="40" stroke="#2a3139" stroke-width="4"></circle>
+<circle cx="48" cy="48" fill="transparent" r="40" stroke="#f08080" stroke-dasharray="251.2" stroke-dashoffset="138" stroke-width="4"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-2xl font-black text-error">45</span>
+<span class="font-label-caps text-[10px] text-slate-500 uppercase">Total</span>
+</div>
+</div>
+<div class="grid grid-cols-2 w-full gap-2 text-center">
+<div class="bg-[#181c22] py-1 rounded">
+<div class="text-xs text-error font-bold">42</div>
+<div class="text-[9px] uppercase text-slate-500 font-label-caps">LLM</div>
+</div>
+<div class="bg-[#181c22] py-1 rounded">
+<div class="text-xs text-primary-container font-bold">48</div>
+<div class="text-[9px] uppercase text-slate-500 font-label-caps">Prof</div>
+</div>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 p-5 min-w-0">
+<div class="flex justify-between items-start gap-4 mb-3">
+<div class="min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-primary-container/10 text-primary-container text-[10px] px-2 py-0.5 rounded border border-primary-container/20 font-mono-code uppercase">Claude-3-Opus</span>
+<span class="text-slate-500 text-xs font-mono-code">ID: #v-99219</span>
+</div>
+<h2 class="font-headline-md text-on-surface truncate cursor-pointer hover:text-primary-container transition-colors">Staff Product Designer</h2>
+<div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+<span class="flex items-center gap-1 text-xs text-on-surface-variant"><span class="material-symbols-outlined text-sm">domain</span>Creative Pulse</span>
+<span class="flex items-center gap-1 text-xs text-secondary font-medium"><span class="material-symbols-outlined text-sm">payments</span>$150k - $200k</span>
+<span class="flex items-center gap-1 text-xs text-slate-500 italic"><span class="material-symbols-outlined text-sm">search</span>"Product Designer + B2B"</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-[#2a3139] rounded text-slate-400">
+<span class="material-symbols-outlined text-lg">sync</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+<div class="space-y-2">
+<h3 class="font-label-caps text-slate-500 uppercase flex items-center gap-1">Summary <span class="material-symbols-outlined text-xs">auto_awesome</span></h3>
+<p class="text-body-sm text-on-surface leading-relaxed">Поиск дизайн-лида для развития экосистемы финансовых инструментов. Требуется опыт создания сложных дизайн-систем и управления командой.</p>
+</div>
+<div class="space-y-2">
+<h3 class="font-label-caps text-error/80 uppercase flex items-center gap-1">Нюансы <span class="material-symbols-outlined text-xs">warning</span></h3>
+<ul class="text-body-sm text-on-surface space-y-1">
+<li class="flex items-start gap-1"><span class="text-error mt-0.5">•</span> Низкий скор: В резюме не указан опыт работы с финансовым сектором.</li>
+<li class="flex items-start gap-1"><span class="text-error mt-0.5">•</span> Вакансия требует знание Figma Variables (глубоко).</li>
+</ul>
+</div>
+<div class="space-y-2">
+<h3 class="font-label-caps text-slate-500 uppercase">Instructions</h3>
+<div class="bg-[#0e1419] border border-[#2a3139] p-2 text-[11px] font-mono-code text-slate-400 italic rounded">
+                                "Portfolio must include case studies related to SaaS platforms. Be ready for a 45-minute design exercise."
+                            </div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">Hybrid (NY)</span>
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">Figma</span>
+<span class="bg-[#2a3139] text-on-surface-variant text-[10px] px-2 py-0.5 rounded font-medium">SaaS</span>
+</div>
+</div>
+<!-- Action Side -->
+<div class="lg:w-72 bg-[#1a2025] border-l border-[#2a3139] p-5 flex flex-col gap-3">
+<button class="w-full bg-primary-container text-on-primary py-2 font-label-caps uppercase rounded text-[11px] hover:brightness-110 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">description</span>
+                        Создать сопроводительное
+                    </button>
+<button class="w-full border border-[#2a3139] text-on-surface py-2 font-label-caps uppercase rounded text-[11px] hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-weight="fill">drafts</span>
+                        Черновик письма
+                    </button>
+<div class="grid grid-cols-2 gap-2 mt-auto">
+<button class="border border-secondary/50 text-secondary py-2 font-label-caps uppercase rounded text-[10px] hover:bg-secondary/10 transition-all">Подходит</button>
+<button class="border border-error/50 text-error py-2 font-label-caps uppercase rounded text-[10px] hover:bg-error/10 transition-all">Не подходит</button>
+</div>
+<textarea class="w-full bg-[#0e1419] border-[#2a3139] text-xs focus:ring-1 focus:ring-primary-container rounded custom-scrollbar h-12 resize-none" placeholder="Причина отказа (опционально)..."></textarea>
+</div>
+</article>
+<!-- Loading Placeholder for Infinite Scroll -->
+<div class="py-8 flex flex-col items-center gap-3 opacity-40">
+<div class="w-8 h-8 border-2 border-primary-container border-t-transparent rounded-full animate-spin"></div>
+<span class="font-label-caps text-slate-500 uppercase tracking-widest text-[10px]">Synchronizing new vacancies...</span>
+</div>
+</div>
+</main>
+<!-- Decorative Bottom Gradient for Depth -->
+<div class="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0e1419] to-transparent pointer-events-none z-40"></div>
+</body></html>

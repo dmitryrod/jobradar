@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JobRadar - Сбор вакансий</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0f1114;
+            color: #dde3e9;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1114;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3139;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #414750;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#93f8a4",
+                      "outline-variant": "#414750",
+                      "inverse-surface": "#dde3e9",
+                      "on-background": "#dde3e9",
+                      "primary-container": "#7cb7ff",
+                      "on-secondary-fixed-variant": "#005322",
+                      "surface-tint": "#a1c9ff",
+                      "tertiary-fixed": "#ffdad8",
+                      "on-error": "#690005",
+                      "surface-bright": "#343a3f",
+                      "on-tertiary-container": "#7d282b",
+                      "on-tertiary-fixed-variant": "#7f292c",
+                      "on-primary-fixed": "#001c37",
+                      "surface-container-high": "#252b30",
+                      "on-tertiary": "#601218",
+                      "tertiary": "#ffbfbd",
+                      "inverse-primary": "#1660a3",
+                      "outline": "#8b919b",
+                      "on-tertiary-fixed": "#410007",
+                      "surface-variant": "#2f353a",
+                      "surface-container": "#1a2025",
+                      "error-container": "#93000a",
+                      "surface-container-lowest": "#090f13",
+                      "secondary-container": "#027b36",
+                      "primary-fixed-dim": "#a1c9ff",
+                      "primary": "#b1d2ff",
+                      "on-secondary-container": "#adffb7",
+                      "on-secondary-fixed": "#002109",
+                      "error": "#ffb4ab",
+                      "secondary": "#77db8a",
+                      "on-surface-variant": "#c1c7d2",
+                      "tertiary-container": "#ff9695",
+                      "secondary-fixed-dim": "#77db8a",
+                      "on-error-container": "#ffdad6",
+                      "on-primary": "#00325a",
+                      "surface": "#0e1419",
+                      "surface-container-highest": "#2f353a",
+                      "background": "#0e1419",
+                      "on-primary-fixed-variant": "#004880",
+                      "on-primary-container": "#00477e",
+                      "surface-dim": "#0e1419",
+                      "tertiary-fixed-dim": "#ffb3b1",
+                      "on-surface": "#dde3e9",
+                      "surface-container-low": "#161c21",
+                      "on-secondary": "#003915",
+                      "primary-fixed": "#d2e4ff",
+                      "inverse-on-surface": "#2b3136"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin": "20px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "unit": "4px",
+                      "sm": "8px",
+                      "gutter": "12px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "mono-code": ["Space Grotesk"]
+              },
+              "fontSize": {
+                      "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "mono-code": ["13px", {"lineHeight": "18px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="font-body-md text-on-surface bg-background">
+<!-- TopAppBar Shell -->
+<header class="bg-[#181c22] border-b border-[#2a3139] flex justify-between items-center px-4 h-14 w-full fixed top-0 z-50">
+<div class="flex items-center gap-6">
+<span class="text-xl font-black tracking-tighter text-[#7cb7ff] uppercase">JobRadar</span>
+<nav class="hidden md:flex items-center gap-8 h-full ml-4">
+<a class="font-['Inter'] text-sm font-medium tracking-tight text-[#7cb7ff] border-b-2 border-[#7cb7ff] pb-3 -mb-[13px]" href="#">Сбор вакансий</a>
+<a class="font-['Inter'] text-sm font-medium tracking-tight text-slate-400 hover:text-slate-200 transition-all duration-200" href="#">Аналитика</a>
+<a class="font-['Inter'] text-sm font-medium tracking-tight text-slate-400 hover:text-slate-200 transition-all duration-200" href="#">Мониторинг</a>
+<a class="font-['Inter'] text-sm font-medium tracking-tight text-slate-400 hover:text-slate-200 transition-all duration-200" href="#">Архив</a>
+<!-- Integration from Sidebar -->
+<a class="font-['Inter'] text-sm font-medium tracking-tight text-slate-400 hover:text-slate-200 transition-all duration-200" href="#">Автоматизация</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<button class="bg-[#2a3139] hover:bg-[#343a3f] text-body-sm font-medium px-3 py-1.5 rounded-lg border border-[#414750] flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+                Лог отклика hh
+            </button>
+<div class="flex items-center gap-1 border-l border-[#2a3139] pl-3">
+<button class="p-2 text-slate-400 hover:bg-[#2a3139] rounded-lg transition-all" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-[#2a3139] rounded-lg transition-all" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-[#2a3139] rounded-lg transition-all" title="Help">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="ml-2 h-8 w-8 rounded-full bg-[#2a3139] border border-[#414750] overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a male user in high-tech corporate setting with blue ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-LZUvvYcWcnNseJuEa2Wo8ZyQ7k5uDdgqi9SiUjlVxicqvL3FxXD2bQXRr_BevIZKX1eCR4kpcxv0eHu9wErLXFAR7z9IJmsbjvm5YiS5qrH5M4vQLDLl-_rxKWW6pJI3701zagpr58Mb8YmA2Ax3scEizYN__fVgpqqHpqf-TjHFxDh8aoA9nQMH3PP6wVEICyY8KoM74cgfdw0e85ae8AHdp6fe-jCFts7eVK50wxKhTP_WDFaWtavu48YArr-IIfbQMzE6fkE"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas - Removed left padding since sidebar is gone -->
+<main class="pt-14 min-h-screen">
+<div class="p-6 max-w-[1600px] mx-auto">
+<!-- Top Dashboard Bar -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+<div>
+<h1 class="font-headline-lg text-on-surface">Сбор вакансий</h1>
+<div class="flex items-center gap-3 mt-1">
+<p class="text-body-sm text-slate-500">Конфигурация параметров поиска и мониторинга hh.ru</p>
+<span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20 font-bold">V2.4 ONLINE</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="bg-[#2a3139] border border-[#414750] text-on-surface px-4 py-3 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-[#343a3f] transition-all">
+<span class="material-symbols-outlined text-[20px]">contact_support</span>
+                        Поддержка
+                    </button>
+<button class="bg-secondary-container text-on-secondary-container px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-secondary-container/10">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                        Старт поиска
+                    </button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Harvest Logic Panel -->
+<section class="col-span-12 lg:col-span-8 space-y-gutter">
+<!-- Essential Controls from Sidebar Integrated into Main View -->
+<div class="bg-[#181c22] border border-primary/30 rounded-xl p-5 bg-gradient-to-r from-[#181c22] to-[#1a2533]">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="settings_suggest">settings_suggest</span>
+</div>
+<div>
+<h3 class="text-headline-md leading-none">Автоматизация отклика</h3>
+<p class="text-[11px] text-slate-500 uppercase tracking-tighter mt-1">System Status: Active</p>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-6">
+<div class="flex items-center gap-4">
+<div class="w-32">
+<label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Score</label>
+<input class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-1.5 text-sm focus:border-primary-container outline-none" type="number" value="85"/>
+</div>
+<div class="w-40">
+<label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Variant Count</label>
+<select class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-1.5 text-sm focus:border-primary-container outline-none">
+<option>3 Variants</option>
+<option>5 Variants</option>
+<option>1 Variant</option>
+</select>
+</div>
+</div>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="peer h-4 w-4 bg-[#121418] border-[#2a3139] rounded text-primary focus:ring-0" type="checkbox"/>
+<span class="text-[12px] text-slate-300 group-hover:text-white">Auto-apply</span>
+</label>
+<button class="bg-primary-container/20 text-primary px-4 py-2 rounded text-[11px] uppercase font-bold tracking-widest hover:bg-primary-container/30 transition-all border border-primary/20">
+                                        Сохранить пресет
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-[#181c22] border border-[#2a3139] rounded-xl p-5">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="terminal">terminal</span>
+<h3 class="text-headline-md">Логика работы с ключевыми словами</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="col-span-1">
+<label class="block text-label-caps text-slate-500 mb-2">HH_KEYWORDS_LOGIC</label>
+<select class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-2 text-sm focus:border-primary-container outline-none">
+<option>Циклический сбор (Loop)</option>
+<option>Одноразовый проход</option>
+<option>Приоритет по ключевым</option>
+</select>
+</div>
+<div>
+<label class="block text-label-caps text-slate-500 mb-2">Количество циклов</label>
+<input class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-2 text-sm focus:border-primary-container outline-none" type="number" value="10"/>
+</div>
+<div>
+<label class="block text-label-caps text-slate-500 mb-2">Максимум вакансий</label>
+<input class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-2 text-sm focus:border-primary-container outline-none" type="number" value="500"/>
+</div>
+</div>
+</div>
+<!-- Preferences Panel -->
+<div class="bg-[#181c22] border border-[#2a3139] rounded-xl p-5">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="tune">tune</span>
+<h3 class="text-headline-md">Preferences</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<label class="block text-label-caps text-slate-500 mb-2">HH_REMOTE_TYPE</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="bg-primary-container text-on-primary-container text-[12px] font-bold py-2 rounded">All types</button>
+<button class="bg-[#121418] border border-[#2a3139] text-slate-400 hover:text-white text-[12px] font-bold py-2 rounded transition-colors">Remote / Hybrid</button>
+<button class="bg-[#121418] border border-[#2a3139] text-slate-400 hover:text-white text-[12px] font-bold py-2 rounded transition-colors">Office Only</button>
+<button class="bg-[#121418] border border-[#2a3139] text-slate-400 hover:text-white text-[12px] font-bold py-2 rounded transition-colors">Vakhata</button>
+</div>
+</div>
+<div class="space-y-4">
+<label class="flex items-center gap-3 cursor-pointer group pt-6">
+<div class="relative flex items-center">
+<input checked="" class="peer h-4 w-4 bg-[#121418] border-[#2a3139] rounded text-primary focus:ring-0" type="checkbox"/>
+</div>
+<span class="text-body-sm text-slate-300">HH_WORK_HOURS_ENABLED</span>
+</label>
+<div class="flex items-center gap-4">
+<div class="flex-1">
+<label class="block text-[10px] text-slate-500 mb-1">START HOUR</label>
+<input class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-2 text-sm focus:border-primary-container outline-none" type="time" value="09:00"/>
+</div>
+<div class="flex-1">
+<label class="block text-[10px] text-slate-500 mb-1">END HOUR</label>
+<input class="w-full bg-[#121418] border border-[#2a3139] rounded px-3 py-2 text-sm focus:border-primary-container outline-none" type="time" value="18:00"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Stats & Secondary Actions -->
+<section class="col-span-12 lg:col-span-4 space-y-gutter">
+<!-- Statistics Widgets -->
+<div class="grid grid-cols-2 gap-gutter">
+<div class="bg-[#181c22] border border-[#2a3139] rounded-xl p-4 flex flex-col justify-between aspect-video">
+<span class="text-label-caps text-slate-500 leading-tight">УНИКАЛЬНЫХ ССЫЛОК В ОЧЕРЕДИ</span>
+<span class="text-3xl font-mono-code text-primary font-bold">1,284</span>
+</div>
+<div class="bg-[#181c22] border border-[#2a3139] rounded-xl p-4 flex flex-col justify-between aspect-video">
+<span class="text-label-caps text-slate-500 leading-tight">ОТКРЫТО КАРТОЧЕК (СЕССИЯ)</span>
+<span class="text-3xl font-mono-code text-secondary font-bold">42</span>
+</div>
+</div>
+<!-- Log Widget -->
+<div class="bg-[#181c22] border border-[#2a3139] rounded-xl overflow-hidden flex flex-col h-[420px]">
+<div class="p-4 border-b border-[#2a3139] flex justify-between items-center bg-[#1a2025]">
+<h3 class="text-label-caps text-slate-200">System Log Feed</h3>
+<span class="material-symbols-outlined text-slate-500 text-[18px]">drag_handle</span>
+</div>
+<div class="p-3 bg-[#121418] flex-1 overflow-y-auto font-mono-code text-[11px] space-y-1">
+<p class="text-slate-500"><span class="text-blue-500">[14:22:01]</span> INFO: Initializing crawler module...</p>
+<p class="text-slate-500"><span class="text-blue-500">[14:22:03]</span> INFO: Authenticated with HH API.</p>
+<p class="text-slate-500"><span class="text-blue-500">[14:22:05]</span> INFO: Loading keywords: "Frontend Engineer", "React Developer"...</p>
+<p class="text-green-500"><span class="text-blue-500">[14:22:10]</span> SUCCESS: Batch #1 fetched (24 items).</p>
+<p class="text-slate-500"><span class="text-blue-500">[14:22:15]</span> INFO: Applying jitter (1852ms)...</p>
+<p class="text-slate-500"><span class="text-blue-500">[14:22:17]</span> INFO: Processing link: hh.ru/vacancy/928310...</p>
+<p class="text-amber-500"><span class="text-blue-500">[14:22:20]</span> WARN: Score 72 below threshold for auto-apply.</p>
+<p class="text-slate-500"><span class="text-blue-500">[14:23:45]</span> INFO: Scanning for new vacancies...</p>
+</div>
+</div>
+</section>
+<!-- Full Width Table Section -->
+<section class="col-span-12">
+<div class="bg-[#181c22] border border-[#2a3139] rounded-xl overflow-hidden">
+<div class="p-5 border-b border-[#2a3139] flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="list_alt">list_alt</span>
+<h3 class="text-headline-md">Список открытых ссылок</h3>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+<input class="bg-[#121418] border border-[#2a3139] rounded-lg pl-10 pr-4 py-1.5 text-xs w-64 focus:border-primary outline-none transition-all" placeholder="Поиск по вакансиям..." type="text"/>
+</div>
+<button class="text-slate-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-[#1a2025] border-b border-[#2a3139]">
+<tr>
+<th class="px-6 py-3 text-label-caps text-slate-500">Ссылка</th>
+<th class="px-6 py-3 text-label-caps text-slate-500">Название</th>
+<th class="px-6 py-3 text-label-caps text-slate-500">Дата/время</th>
+<th class="px-6 py-3 text-label-caps text-slate-500 text-right">Действие</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#2a3139]">
+<tr class="hover:bg-[#252b30] transition-colors">
+<td class="px-6 py-4">
+<a class="text-primary text-body-sm hover:underline flex items-center gap-1" href="#">
+                                                hh.ru/vacancy/10293122
+                                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-body-sm font-medium">Senior Frontend Engineer (React/TypeScript)</td>
+<td class="px-6 py-4 text-body-sm text-slate-400 font-mono-code">20.10.2023 14:22</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-colors" title="Parse Details">
+<span class="material-symbols-outlined text-[18px]">analytics</span>
+</button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-colors" title="Blacklist">
+<span class="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-[#252b30] transition-colors">
+<td class="px-6 py-4">
+<a class="text-primary text-body-sm hover:underline flex items-center gap-1" href="#">
+                                                hh.ru/vacancy/10293540
+                                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-body-sm font-medium">Middle Fullstack Developer (Node.js)</td>
+<td class="px-6 py-4 text-body-sm text-slate-400 font-mono-code">20.10.2023 14:18</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">analytics</span>
+</button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-[#252b30] transition-colors">
+<td class="px-6 py-4">
+<a class="text-primary text-body-sm hover:underline flex items-center gap-1" href="#">
+                                                hh.ru/vacancy/10293881
+                                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</td>
+<td class="px-6 py-4 text-body-sm font-medium">UI/UX Designer (Product)</td>
+<td class="px-6 py-4 text-body-sm text-slate-400 font-mono-code">20.10.2023 14:05</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">analytics</span>
+</button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-colors">
+<span class="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-[#1a2025] flex justify-center">
+<button class="text-label-caps text-primary hover:text-white transition-colors">
+                                Загрузить больше вакансий
+                            </button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation Shell -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#181c22] border-t border-[#2a3139] flex justify-around items-center h-16 px-2 z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" data-icon="terminal" data-weight="fill" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Сбор</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Авто</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Логи</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="filter_alt">filter_alt</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Фильтры</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">График</span>
+</button>
+</nav>
+</body></html>

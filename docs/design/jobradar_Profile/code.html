@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Space+Grotesk:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        /* Custom scrollbar for the dense console look */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1114;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3139;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7cb7ff;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#7f292c",
+                        "on-background": "#dde3e9",
+                        "on-secondary-fixed-variant": "#005322",
+                        "tertiary-container": "#ff9695",
+                        "tertiary": "#ffbfbd",
+                        "outline-variant": "#414750",
+                        "surface-tint": "#a1c9ff",
+                        "surface": "#0e1419",
+                        "on-tertiary-fixed": "#410007",
+                        "on-primary": "#00325a",
+                        "on-tertiary-container": "#7d282b",
+                        "tertiary-fixed": "#ffdad8",
+                        "surface-container-highest": "#2f353a",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#7cb7ff",
+                        "on-primary-fixed": "#001c37",
+                        "on-primary-container": "#00477e",
+                        "on-surface": "#dde3e9",
+                        "primary-fixed": "#d2e4ff",
+                        "inverse-surface": "#dde3e9",
+                        "secondary-fixed-dim": "#77db8a",
+                        "inverse-on-surface": "#2b3136",
+                        "on-surface-variant": "#c1c7d2",
+                        "on-secondary": "#003915",
+                        "secondary-fixed": "#93f8a4",
+                        "on-secondary-fixed": "#002109",
+                        "background": "#0e1419",
+                        "tertiary-fixed-dim": "#ffb3b1",
+                        "secondary-container": "#027b36",
+                        "on-tertiary": "#601218",
+                        "surface-container-lowest": "#090f13",
+                        "surface-container-high": "#252b30",
+                        "secondary": "#77db8a",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#161c21",
+                        "surface-container": "#1a2025",
+                        "primary": "#b1d2ff",
+                        "on-error": "#690005",
+                        "inverse-primary": "#1660a3",
+                        "primary-fixed-dim": "#a1c9ff",
+                        "on-primary-fixed-variant": "#004880",
+                        "surface-bright": "#343a3f",
+                        "on-secondary-container": "#adffb7",
+                        "surface-variant": "#2f353a",
+                        "surface-dim": "#0e1419",
+                        "outline": "#8b919b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "margin": "20px",
+                        "gutter": "12px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "mono-code": ["Space Grotesk"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "mono-code": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-[#0f1114] text-on-background font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-[#0f1114] text-[#7cb7ff] font-['Inter'] antialiased text-sm tracking-tight docked full-width top-0 border-b border-[#2a3139] flex justify-between items-center px-4 h-14 w-full sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black tracking-tighter text-[#7cb7ff]">JobRadar</span>
+<!-- Horizontal Navigation -->
+<nav class="flex items-center gap-1">
+<a class="px-3 py-2 text-slate-400 hover:bg-[#181c22] transition-colors rounded" href="#">Сбор вакансий</a>
+<a class="px-3 py-2 text-slate-400 hover:bg-[#181c22] transition-colors rounded" href="#">На проверке</a>
+<a class="px-3 py-2 text-slate-400 hover:bg-[#181c22] transition-colors rounded" href="#">Подходят</a>
+<a class="px-3 py-2 text-slate-400 hover:bg-[#181c22] transition-colors rounded" href="#">Отклоненные</a>
+<a class="px-3 py-2 text-slate-400 hover:bg-[#181c22] transition-colors rounded" href="#">Аналитика</a>
+<a class="px-3 py-2 text-slate-400 hover:bg-[#181c22] transition-colors rounded" href="#">История</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<input class="bg-[#121418] border border-[#2a3139] rounded px-3 py-1.5 text-xs focus:border-[#7cb7ff] outline-none transition-all w-48 focus:w-64" placeholder="Search parameters..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined text-slate-400 hover:bg-[#181c22] p-1.5 rounded transition-all">notifications</button>
+<button class="material-symbols-outlined text-[#7cb7ff] font-bold bg-[#181c22] p-1.5 rounded transition-all">settings</button>
+<button class="material-symbols-outlined text-slate-400 hover:bg-[#181c22] p-1.5 rounded transition-all">help_outline</button>
+</div>
+<img alt="User Avatar" class="w-8 h-8 rounded-full border border-[#2a3139]" data-alt="close-up portrait of a professional system operator in a dimly lit tech room with soft blue backlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_v5mceOuqoUoI0wHHEKQ9SwpEa5bI8Myg1uF5J8cHNgypRuyp3QLqiGNKttwqvjfqtVdQgk7NOpKc_c6XAF-hkv0DXrBT0TJzlkrJ8PxhdWEptCnnFw3Puz4rtbeuf0qmzHlOOo8xwWRMrGv9l5NMZ9iHBP674RfnOg5uk5l56f5lYFtAJboWvsxG5SO07P2ItXVSmnB5qK7ckarynpINJs8aw74vZ53KjGRMzd7K4rZfoAr8ALyhjEoKGs4RpIPVLKLUNBigy6c"/>
+</div>
+</header>
+<main class="flex-1 max-w-[1600px] mx-auto w-full p-lg grid grid-cols-12 gap-gutter">
+<!-- Page Header -->
+<div class="col-span-12 flex justify-between items-end mb-4 border-b border-[#2a3139] pb-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Профиль соискателя</h1>
+<p class="text-body-sm text-slate-500 font-mono-code uppercase tracking-widest mt-1">v2.4.0-stable // Preference Engine</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-[#2a3139] rounded text-body-sm hover:bg-[#181c22] transition-all">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+                    Импорт JSON
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary-container font-semibold rounded text-body-sm active:opacity-80 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-weight="fill">save</span>
+                    Сохранить в config/preferences.json
+                </button>
+</div>
+</div>
+<!-- Sidebar Config Panels (Bento Pattern) -->
+<div class="col-span-12 lg:col-span-3 space-y-gutter">
+<div class="bg-[#181c22] border border-[#2a3139] rounded p-md">
+<h3 class="font-label-caps text-label-caps text-[#7cb7ff] mb-sm flex items-center justify-between">
+                    System Health
+                    <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+</h3>
+<div class="space-y-3 font-mono-code text-[12px]">
+<div class="flex justify-between">
+<span class="text-slate-500">LLM Engine:</span>
+<span class="text-on-surface">GPT-4o / active</span>
+</div>
+<div class="flex justify-between">
+<span class="text-slate-500">Latency:</span>
+<span class="text-on-surface">142ms</span>
+</div>
+<div class="flex justify-between">
+<span class="text-slate-500">Profiles:</span>
+<span class="text-on-surface">1/128</span>
+</div>
+</div>
+</div>
+<div class="bg-[#181c22] border border-[#2a3139] rounded p-md">
+<h3 class="font-label-caps text-label-caps text-[#7cb7ff] mb-sm">Ban Threshold</h3>
+<input class="w-full accent-[#7cb7ff] mb-2" type="range"/>
+<div class="flex justify-between font-mono-code text-[12px] text-slate-400">
+<span>Soft: -50</span>
+<span class="text-error font-bold">Hard: -100</span>
+</div>
+</div>
+<div class="bg-[#121418] border border-[#2a3139] rounded p-md overflow-hidden relative">
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<img alt="Tech Background" class="w-full h-full object-cover" data-alt="abstract dark technical motherboard patterns with neon blue traces and glowing components in high detail cyber aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoTu94CH5zTh8BXcC8eupQC1JAC_SR7mZxUK_LnaugUfFKeqA5sl3-fqG2DStm4H0UhLKong1Zt9hBTeA9NV1SswY86UJ46kaxYp4-cPdqAKQIJpTp4s4R388GZ9blrxmGYOi-3Zl1hZRMl1DHYbbUgBWugW-Iu-rNB3r4z1AQsNHFby4l0m7Us-vl3Efge-you0HKePFnLvd6sChVK_5zWXj_JSjaGkeRnwPYbvjI_7xifUeeCi50dG7Ha1pcRftPUH9wc8icJuE"/>
+</div>
+<h3 class="font-label-caps text-label-caps text-slate-300 relative z-10 mb-2">LLM Strategy</h3>
+<div class="bg-surface-container-highest/50 backdrop-blur-sm p-sm rounded text-xs text-slate-400 border border-outline-variant relative z-10">
+                    "Evaluate applicant experience based on semantic alignment with the weighted grid. Auto-reject if Ban flags are triggered."
+                </div>
+</div>
+</div>
+<!-- Main Grid Console -->
+<div class="col-span-12 lg:col-span-9">
+<div class="bg-[#181c22] border border-[#2a3139] rounded overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#0f1114] border-b border-[#2a3139]">
+<th class="p-3 text-label-caps text-slate-500 w-12 text-center">Вкл</th>
+<th class="p-3 text-label-caps text-slate-500 w-32">Логика</th>
+<th class="p-3 text-label-caps text-slate-500">Название</th>
+<th class="p-3 text-label-caps text-slate-500">Значение</th>
+<th class="p-3 text-label-caps text-slate-500 w-24">Вес</th>
+<th class="p-3 text-label-caps text-slate-500 w-16 text-center">±</th>
+<th class="p-3 text-label-caps text-slate-500 w-12 text-center">Ban</th>
+</tr>
+</thead>
+<tbody class="font-body-sm">
+<!-- Row 1 -->
+<tr class="border-b border-[#2a3139]/50 hover:bg-[#121418] transition-colors">
+<td class="p-3 text-center">
+<input checked="" class="rounded bg-[#121418] border-[#2a3139] text-[#7cb7ff] focus:ring-0" type="checkbox"/>
+</td>
+<td class="p-3">
+<select class="bg-[#121418] border-[#2a3139] text-xs font-mono-code rounded px-1.5 py-1 w-full focus:border-[#7cb7ff] outline-none">
+<option>equal</option>
+<option selected="">contains</option>
+<option>regex</option>
+<option>not equal</option>
+</select>
+</td>
+<td class="p-3">
+<input class="bg-transparent border-none p-0 text-on-surface focus:ring-0 w-full" type="text" value="Stack"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-secondary" type="text" value="React, Tailwind, Node"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-center" type="number" value="25"/>
+</td>
+<td class="p-3 text-center">
+<button class="material-symbols-outlined text-[18px] text-slate-500 hover:text-white">more_vert</button>
+</td>
+<td class="p-3 text-center">
+<input class="rounded bg-[#121418] border-[#2a3139] text-error focus:ring-0" type="checkbox"/>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-[#2a3139]/50 hover:bg-[#121418] transition-colors">
+<td class="p-3 text-center">
+<input checked="" class="rounded bg-[#121418] border-[#2a3139] text-[#7cb7ff] focus:ring-0" type="checkbox"/>
+</td>
+<td class="p-3">
+<select class="bg-[#121418] border-[#2a3139] text-xs font-mono-code rounded px-1.5 py-1 w-full focus:border-[#7cb7ff] outline-none">
+<option>equal</option>
+<option>contains</option>
+<option selected="">regex</option>
+<option>not equal</option>
+</select>
+</td>
+<td class="p-3">
+<input class="bg-transparent border-none p-0 text-on-surface focus:ring-0 w-full" type="text" value="Experience"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-[#7cb7ff]" type="text" value="[3-9]\+ years"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-center" type="number" value="40"/>
+</td>
+<td class="p-3 text-center">
+<button class="material-symbols-outlined text-[18px] text-slate-500 hover:text-white">more_vert</button>
+</td>
+<td class="p-3 text-center">
+<input class="rounded bg-[#121418] border-[#2a3139] text-error focus:ring-0" type="checkbox"/>
+</td>
+</tr>
+<!-- Row 3 (Ban flag active) -->
+<tr class="border-b border-[#2a3139]/50 hover:bg-[#121418] transition-colors bg-error-container/5">
+<td class="p-3 text-center">
+<input checked="" class="rounded bg-[#121418] border-[#2a3139] text-[#7cb7ff] focus:ring-0" type="checkbox"/>
+</td>
+<td class="p-3">
+<select class="bg-[#121418] border-[#2a3139] text-xs font-mono-code rounded px-1.5 py-1 w-full focus:border-[#7cb7ff] outline-none">
+<option selected="">equal</option>
+<option>contains</option>
+<option>regex</option>
+<option>not equal</option>
+</select>
+</td>
+<td class="p-3">
+<input class="bg-transparent border-none p-0 text-on-surface focus:ring-0 w-full" type="text" value="Relocation"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-error/50 text-xs font-mono-code rounded px-2 py-1 w-full text-error" type="text" value="Required"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-center text-error" type="number" value="-100"/>
+</td>
+<td class="p-3 text-center">
+<button class="material-symbols-outlined text-[18px] text-slate-500 hover:text-white">more_vert</button>
+</td>
+<td class="p-3 text-center">
+<input checked="" class="rounded bg-[#121418] border-error text-error focus:ring-0" type="checkbox"/>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b border-[#2a3139]/50 hover:bg-[#121418] transition-colors">
+<td class="p-3 text-center">
+<input checked="" class="rounded bg-[#121418] border-[#2a3139] text-[#7cb7ff] focus:ring-0" type="checkbox"/>
+</td>
+<td class="p-3">
+<select class="bg-[#121418] border-[#2a3139] text-xs font-mono-code rounded px-1.5 py-1 w-full focus:border-[#7cb7ff] outline-none">
+<option>equal</option>
+<option selected="">contains</option>
+<option>regex</option>
+<option>not equal</option>
+</select>
+</td>
+<td class="p-3">
+<input class="bg-transparent border-none p-0 text-on-surface focus:ring-0 w-full" type="text" value="Location"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-on-surface" type="text" value="Remote, Moscow, Belgrade"/>
+</td>
+<td class="p-3">
+<input class="bg-[#121418] border border-[#2a3139] text-xs font-mono-code rounded px-2 py-1 w-full text-center" type="number" value="15"/>
+</td>
+<td class="p-3 text-center">
+<button class="material-symbols-outlined text-[18px] text-slate-500 hover:text-white">more_vert</button>
+</td>
+<td class="p-3 text-center">
+<input class="rounded bg-[#121418] border-[#2a3139] text-error focus:ring-0" type="checkbox"/>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer Summary Line -->
+<div class="bg-[#0f1114] p-4 flex justify-between items-center border-t border-[#2a3139]">
+<button class="flex items-center gap-1 text-xs text-slate-500 hover:text-[#7cb7ff] transition-colors">
+<span class="material-symbols-outlined text-[16px]">add_circle</span>
+                        Добавить критерий
+                    </button>
+<div class="flex items-center gap-6 font-mono-code text-sm">
+<span class="text-slate-500 uppercase text-[10px] tracking-widest">Calculated Score</span>
+<div class="flex items-baseline gap-2">
+<span class="text-slate-400 text-xs">Сумма весов (вкл.):</span>
+<span class="text-xl font-bold text-[#7cb7ff]">80.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Terminal/Log Viewer Section -->
+<div class="mt-gutter bg-[#0f1114] border border-[#2a3139] rounded overflow-hidden">
+<div class="bg-[#181c22] px-4 py-1 border-b border-[#2a3139] flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-slate-500">Live Validation Log</span>
+<div class="flex gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-error/20 border border-error/50"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-secondary/20 border border-secondary/50"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#7cb7ff]/20 border border-[#7cb7ff]/50"></span>
+</div>
+</div>
+<div class="p-4 font-mono-code text-[12px] space-y-1 h-32 overflow-y-auto bg-[#0a0c0e]">
+<div class="text-slate-600">[14:20:01] <span class="text-secondary">INFO:</span> Preference config loaded.</div>
+<div class="text-slate-600">[14:20:05] <span class="text-secondary">INFO:</span> Validating regex pattern for 'Experience'...</div>
+<div class="text-slate-600">[14:21:12] <span class="text-error">WARN:</span> Score sum exceeds optimal threshold (80 &gt; 75).</div>
+<div class="text-slate-600">[14:21:45] <span class="text-slate-400">DEBUG:</span> Logic check 'contains' passed for entry ID_082.</div>
+<div class="text-slate-600 animate-pulse">[14:22:00] _</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB (Hidden as per rule: Profile page) -->
+</body></html>
