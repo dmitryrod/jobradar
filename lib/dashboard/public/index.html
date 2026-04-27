@@ -7,10 +7,12 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <header class="top">
+    <div class="app-shell">
+      <header class="top-bar" role="banner">
+        <div class="top-bar__inner">
       <div class="top-row">
         <div class="top-heading">
-          <h1>JobRadar</h1>
+          <h1 class="app-brand">JobRadar</h1>
           <span id="harvest-badge" class="harvest-badge" hidden>Идёт сбор вакансий…</span>
         </div>
         <div class="top-actions">
@@ -45,7 +47,7 @@
           </button>
         </div>
       </div>
-      <div class="tabs vacancy-tabs">
+      <nav class="tabs vacancy-tabs" aria-label="Разделы очереди">
         <button type="button" data-tab="collect" class="tab">
           Сбор вакансий
           <span class="tab-count" data-tab-count="collect" aria-label="Открыто карточек (уникальных URL)">0</span>
@@ -62,7 +64,11 @@
           Отклонённые
           <span class="tab-count" data-tab-count="rejected" aria-label="Отклонённых вакансий">0</span>
         </button>
-      </div>
+      </nav>
+        </div>
+      </header>
+      <div class="app-main">
+        <div class="app-main__inner">
       <section id="review-pending-panel" class="review-pending-panel" hidden>
         <div class="review-pending-settings-main" aria-label="Фильтр вакансий, вкладка на проверке">
           <h3 class="review-panel-title">Фильтр вакансий</h3>
@@ -305,8 +311,10 @@
           <p class="harvest-log-hint muted"></p>
         </div>
       </section>
-    </header>
     <main id="list"></main>
+        </div>
+      </div>
+    </div>
     <template id="card-tpl">
       <article class="card">
         <button type="button" class="card-dismiss" aria-label="Удалить из очереди" title="Удалить без обработки">×</button>
