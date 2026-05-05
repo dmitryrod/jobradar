@@ -1,9 +1,0 @@
-{
-  "comment": "Фрагмент для слияния в %USERPROFILE%\\.cursor\\mcp.json → mcpServers. Источник: https://github.com/ckreiling/mcp-server-docker (GPL-3.0). Секреты не коммитить. Удалённый демон: env DOCKER_HOST (в т.ч. ssh://user@host). Альтернатива без uvx: docker build -t mcp-server-docker . затем command docker, args [run,-i,--rm,-v,/var/run/docker.sock:/var/run/docker.sock,mcp-server-docker:latest] — на Windows чаще удобнее uvx при работающем Docker Desktop.",
-  "mcpServers": {
-    "mcp-server-docker": {
-      "command": "uvx",
-      "args": ["mcp-server-docker"]
-    }
-  }
-}
