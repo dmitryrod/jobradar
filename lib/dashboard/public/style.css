@@ -1278,7 +1278,30 @@ h1 {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.35rem;
+  margin: -1rem -1.15rem 0.35rem;
+  padding: 0.65rem 1.15rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  user-select: none;
+}
+
+.modal-head:active {
+  cursor: grabbing;
+}
+
+.modal-title {
+  cursor: default;
+  pointer-events: none;
+}
+
+.modal-close {
+  pointer-events: auto;
+}
+
+.modal-dialog.is-dragging {
+  position: absolute;
+  margin: 0;
 }
 
 .modal-title {
