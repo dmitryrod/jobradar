@@ -18,31 +18,31 @@
 
 ### Очередь на проверке
 
-![Очередь вакансий на проверке](docs/images/readme/dashboard-pending-overview.png)
+![Очередь вакансий на проверке](images/readme/dashboard-pending-overview.png)
 
 Очередь показывает score, детали вакансии, комментарии модели и статус обработки до отклика.
 
 ### Автоматизация сбора и review по score
 
-![Панель сбора и автоматизации](docs/images/readme/dashboard-collect-automation.png)
+![Панель сбора и автоматизации](images/readme/dashboard-collect-automation.png)
 
 Из интерфейса можно запускать `harvest`, управлять лимитами, логикой ключей, рабочими часами и автоматизацией ревью.
 
 ### Генерация и редактор черновика
 
-![Модальное окно черновика письма](docs/images/readme/dashboard-draft-modal.png)
+![Модальное окно черновика письма](images/readme/dashboard-draft-modal.png)
 
 Письмо генерируется на основе вакансии, CV, шаблона, стилевых примеров и дополнительных данных из `applicationProfile`.
 
 ### Лог браузерного отклика
 
-![Лог отклика в браузере](docs/images/readme/dashboard-apply-log.png)
+![Лог отклика в браузере](images/readme/dashboard-apply-log.png)
 
 После подтверждения сценарий запускает браузерный шаг и пишет понятный лог прямо в дашборд.
 
 ### Утверждённые действия перед откликом
 
-![Список подготовленных откликов](docs/images/readme/dashboard-approved-actions.png)
+![Список подготовленных откликов](images/readme/dashboard-approved-actions.png)
 
 После ревью карточки переходят в готовое состояние, откуда можно запускать отклик в браузере.
 
