@@ -1719,6 +1719,15 @@ h1 {
   flex: 0 0 minmax(6.75rem, 9.25rem);
 }
 
+.review-pending-toolbar .ra-variant-wrap--pending[hidden] {
+  display: none !important;
+}
+
+.harvest-panel .ra-variant-wrap[hidden],
+.harvest-panel .ra-scope-wrap[hidden] {
+  display: none !important;
+}
+
 .review-pending-toolbar .btn-review-automation-save-pending,
 .review-pending-toolbar .btn-review-pending-batch {
   flex: 0 0 auto;
