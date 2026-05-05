@@ -1907,3 +1907,54 @@ h1 {
   font-size: 0.82rem;
   padding: 0.35rem 0.65rem;
 }
+
+/* Scroll-to-top FAB */
+.scroll-to-top {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px);
+  transition:
+    opacity 0.18s ease,
+    visibility 0.18s ease,
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.scroll-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.scroll-to-top:hover {
+  background: var(--bg);
+}
+
+.scroll-to-top-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 560px) {
+  .scroll-to-top {
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
