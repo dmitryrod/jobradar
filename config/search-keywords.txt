@@ -1,3 +1,13 @@
+ai engineer
+ии инженер
+ai инженер
+ai разработчик
+ai prompt
+ai integrator
+ai manager
+ai developer
+ai technologist
+prompt engineer
 промпт инженер
 промпт разработчик
 инженер по ии
@@ -13,14 +23,4 @@ llm специалист
 специалист по автоматизации бизнеса
 специалист по искусственному интеллекту
 ml инженер
-genai архитектор
-ai engineer
-ии инженер
-ai инженер
-ai разработчик
-ai prompt
-ai integrator
-ai manager
-ai developer
-ai technologist
-prompt engineer
+genai архитектор
