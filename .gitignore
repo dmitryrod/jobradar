@@ -1,2 +1,93 @@
-# Cursor-specific files
+# Cursor-specific
 .cursor/
+.cursorignore
+
+# RAG memory
+.cursor/memory/chroma_db/
+.cursor/memory/rag_fts.sqlite
+.cursor/memory/.ingest_state.json
+.cursor/active_memory.md
+
+# Backups
+*backups/*
+backups/
+
+# Python
+*.pyc
+*.key
+*.pem
+__pycache__/
+.pytest_cache/
+*.pytest_cache/
+*cache/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Node
+**/node_modules/
+node_modules/
+**/dist/
+dist/
+**/build/
+build/
+
+# Editor and IDE
+**/.vscode/
+.vscode/
+**/*.code-workspace
+*.code-workspace*
+**/*.swp
+**/*.swo
+**/.idea/
+
+# OS-specific
+**/Thumbs.db
+**/ehthumbs.db
+**/.Trashes
+**/.DS_Store
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
+*.log
+logs/
+logs/app.log
+logs/signals_log.
+logs/signals_log.txt
+
+# Environment
+*env
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+.env.local
+
+# Lock files
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Local dist
+local-dist/*
+!local-dist/wheels/
+local-dist/wheels/*
+!local-dist/wheels/.gitkeep
+
+# Documentation (local only)
+docs/
+
+# Other
+.git
+presentations/
+statistics-data/
+data/session/
+CV/*.pdf
