@@ -89,5 +89,5 @@ docs/
 .git
 presentations/
 statistics-data/
-data/*
+data/
 CV/*.pdf
