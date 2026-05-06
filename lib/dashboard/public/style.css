@@ -501,6 +501,33 @@ h1 {
   font-size: 0.88rem;
 }
 
+/* Кастомный chevron для выпадающих списков (.harvest-field) */
+.harvest-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 10px 5px;
+  padding-right: 1.75rem;
+  cursor: pointer;
+}
+
+.harvest-field select::-ms-expand {
+  display: none;
+}
+
+.harvest-field select:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
+.harvest-field select:focus-visible,
+.harvest-field select:active {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23a8d0ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
 /* Кастомные стрелки для number inputs - скрываем нативные, кастомные через CSS */
 .harvest-field input[type="number"]::-webkit-inner-spin-button,
 .harvest-field input[type="number"]::-webkit-outer-spin-button {
@@ -520,9 +547,16 @@ h1 {
   cursor: default;
 }
 
-.harvest-field input[type="number"]:hover {
+/* Раздельные hover-стейты для стрелок (управляются через JS) */
+.harvest-field input[type="number"].arrow-up-hover {
   background-image: 
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
+.harvest-field input[type="number"].arrow-down-hover {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
 }
 
@@ -2084,9 +2118,16 @@ h1 {
   cursor: default;
 }
 
-.review-field input[type="number"]:hover {
+/* Раздельные hover-стейты для стрелок (управляются через JS) */
+.review-field input[type="number"].arrow-up-hover {
   background-image: 
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
+.review-field input[type="number"].arrow-down-hover {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
 }
 
@@ -2097,13 +2138,42 @@ h1 {
 }
 
 .review-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   max-width: 100%;
+  background-color: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 10px 5px;
+  padding-right: 1.75rem;
+  cursor: pointer;
+}
+
+.review-field select::-ms-expand {
+  display: none;
+}
+
+.review-field select:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
+.review-field select:focus-visible,
+.review-field select:active {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23a8d0ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
 }
 
 .harvest-settings-layout .review-field input[type='number'],
 .harvest-settings-layout .review-field select {
   padding: 0.28rem 0.4rem;
   font-size: 0.82rem;
+}
+
+.harvest-settings-layout .review-field select {
+  padding-right: 1.45rem;
+  background-position: right 0.35rem center;
+  background-size: 8px 4px;
 }
 
 .review-field-checkbox {
