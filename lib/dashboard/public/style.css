@@ -501,6 +501,37 @@ h1 {
   font-size: 0.88rem;
 }
 
+/* Кастомные стрелки для number inputs - скрываем нативные, кастомные через CSS */
+.harvest-field input[type="number"]::-webkit-inner-spin-button,
+.harvest-field input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.harvest-field input[type="number"] {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 4px top 4px, right 4px bottom 4px;
+  background-size: 8px 4px, 8px 4px;
+  padding-right: 18px;
+  cursor: default;
+}
+
+.harvest-field input[type="number"]:hover {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
+.harvest-field input[type="number"]:active {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23a8d0ff' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23a8d0ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
 .harvest-field-block {
   grid-column: 1 / -1;
 }
@@ -633,6 +664,26 @@ h1 {
 
 .harvest-stats-line {
   margin: 0.35rem 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.harvest-line-left {
+  justify-self: start;
+}
+
+.harvest-stats-line .harvest-urls-pagination--top {
+  justify-self: center;
+}
+
+.harvest-stats-line .harvest-urls-page-size-label {
+  justify-self: end;
+}
+
+.harvest-stat-ratio {
+  font-variant-numeric: tabular-nums;
 }
 
 .harvest-stats-meta,
@@ -654,8 +705,6 @@ h1 {
 }
 
 .harvest-urls-table-wrap {
-  max-height: 16rem;
-  overflow: auto;
   margin: 0.35rem 0 0;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -707,6 +756,110 @@ h1 {
 .harvest-urls-table .harvest-urls-col-action {
   max-width: 18rem;
   word-break: break-word;
+}
+
+/* Счётчик в заголовке таблицы */
+.harvest-urls-table th .harvest-urls-count {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* Пагинация списка открытых ссылок */
+.harvest-urls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.harvest-urls-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.harvest-urls-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.harvest-urls-page-size-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.harvest-urls-page-size {
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.harvest-urls-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.harvest-urls-pagination[hidden] {
+  display: none !important;
+}
+
+.btn-pagination {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: #1f252d;
+  border-color: rgba(124, 183, 255, 0.55);
+  color: var(--accent);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5rem;
+  text-align: center;
+}
+
+.harvest-urls-pagination--bottom {
+  margin-top: 0.5rem;
+  justify-content: center;
+}
+
+@media (max-width: 560px) {
+  .harvest-urls-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .harvest-urls-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 .collect-hint {
@@ -1912,6 +2065,37 @@ h1 {
   color: var(--text);
 }
 
+/* Кастомные стрелки для review-field - скрываем нативные, кастомные через CSS */
+.review-field input[type="number"]::-webkit-inner-spin-button,
+.review-field input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.review-field input[type="number"] {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%239aa0a6' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 4px top 4px, right 4px bottom 4px;
+  background-size: 8px 4px, 8px 4px;
+  padding-right: 18px;
+  cursor: default;
+}
+
+.review-field input[type="number"]:hover {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%237cb7ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
+.review-field input[type="number"]:active {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23a8d0ff' d='M5 0L0 5h10z'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath fill='%23a8d0ff' d='M5 5L0 0h10z'/%3E%3C/svg%3E");
+}
+
 .review-field select {
   max-width: 100%;
 }
@@ -2151,4 +2335,11 @@ h1 {
   .review-pending-panel {
     padding-top: 3.5rem;
   }
+}
+
+/* Firefox: скрываем нативные стрелки, используем кастомные через background-image */
+.harvest-field input[type="number"],
+.review-field input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

@@ -93,7 +93,7 @@
             </label>
             <label class="review-field ra-variant-wrap ra-variant-wrap--pending" hidden>
               <span title="Сколько вариантов текста письма запросить у модели за один вызов (1–10). Влияет на ручную генерацию и на авто/батч, где используется эта настройка."
-                >Число вариантов письма (1–10)</span
+                >Количество вариантов письма</span
               >
               <input type="number" data-ra="coverLetterVariantCount" min="1" max="10" step="1" />
             </label>
@@ -104,9 +104,9 @@
       </section>
       <!-- Подписи полей и всплывающие подсказки: правьте текст узлов и атрибут title у label / span (см. docs/USAGE.md, .env.example). -->
       <section id="harvest-panel" class="harvest-panel" hidden>
-        <p class="harvest-lead">
+        <!--<p class="harvest-lead">
           Параметры ниже передаются в <code>harvest</code> и <strong>перекрывают</strong> одноимённые переменные из <code>.env</code>. Один «проход» — поиск по ключам (см. логику ниже), сбор ссылок до лимита сессии, парсинг карточек, оценка LLM.
-        </p>
+        </p>-->
         <div class="harvest-settings-layout">
           <div class="harvest-settings-main">
         <div class="harvest-fields harvest-fields-logic">
@@ -227,9 +227,9 @@
             Остановить поиск
           </button>
         </div>
-        <p class="harvest-stale-hint muted">
+        <!--<p class="harvest-stale-hint muted">
           Одной кнопкой «Остановить поиск» создаётся флаг остановки для живого процесса и при необходимости дописывается завершение в лог (как раньше «Сбросить зависшее состояние»).
-        </p>
+        </p>-->
           </div>
         <aside class="review-automation-collect" aria-label="Автоматизация по score">
           <!--<h3 class="review-panel-title">Автоматизация отклика</h3>-->
@@ -270,7 +270,7 @@
             </label>
             <label class="review-field ra-variant-wrap" hidden>
               <span title="Сколько вариантов текста письма запросить у модели за один вызов (1–10). Влияет на ручную генерацию и на авто/батч, где используется эта настройка."
-                >Число вариантов письма (1–10)</span
+                >Количество вариантов письма</span
               >
               <input type="number" data-ra="coverLetterVariantCount" min="1" max="10" step="1" />
             </label>
@@ -280,31 +280,51 @@
         </div>
         <div class="harvest-stats">
           <p class="harvest-stats-line">
-            <span class="harvest-stat-label">Уникальных ссылок в очереди на обход:</span>
-            <strong class="harvest-stat-queued">0</strong>
-          </p>
-          <p class="harvest-stats-line">
-            <span class="harvest-stat-label">Открыто карточек (уникальных URL):</span>
-            <strong class="harvest-stat-opened">0</strong>
+            <span class="harvest-line-left">
+              <span class="harvest-stat-label">История переходов по вакансиям:</span>
+              <strong class="harvest-stat-ratio"><span class="harvest-urls-count">0</span></strong>
+            </span>
+            <span class="harvest-urls-pagination harvest-urls-pagination--top" hidden>
+              <button type="button" class="btn-pagination btn-pagination-prev" aria-label="Предыдущая страница">← Назад</button>
+              <span class="pagination-info"><span class="pagination-current">1</span> / <span class="pagination-total">1</span></span>
+              <button type="button" class="btn-pagination btn-pagination-next" aria-label="Следующая страница">Вперёд →</button>
+            </span>
+            <label class="harvest-urls-page-size-label">
+              На странице:
+              <select class="harvest-urls-page-size">
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+                <option value="300">300</option>
+                <option value="400">400</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+              </select>
+            </label>
           </p>
           <p class="harvest-stats-meta muted"></p>
           <div class="harvest-stats-lists">
-            <details class="harvest-urls-details">
-              <summary>Список открытых ссылок (<span class="harvest-urls-count">0</span>)</summary>
-              <div class="harvest-urls-table-wrap">
-                <table class="harvest-urls-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Ссылка</th>
-                      <th scope="col">Название</th>
-                      <th scope="col">Дата/время</th>
-                      <th scope="col">Действие</th>
-                    </tr>
-                  </thead>
-                  <tbody class="harvest-urls-tbody"></tbody>
-                </table>
+            <div class="harvest-urls-header">
+             <div class="harvest-urls-controls">
               </div>
-            </details>
+            </div>
+            <div class="harvest-urls-table-wrap">
+              <table class="harvest-urls-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Дата/время</th>
+                    <th scope="col">Ссылка</th>
+                    <th scope="col">Название</th>
+                    <th scope="col">Действие</th>
+                  </tr>
+                </thead>
+                <tbody class="harvest-urls-tbody"></tbody>
+              </table>
+            </div>
+            <div class="harvest-urls-pagination harvest-urls-pagination--bottom" hidden>
+              <button type="button" class="btn-pagination btn-pagination-prev" aria-label="Предыдущая страница">← Назад</button>
+              <span class="pagination-info"><span class="pagination-current">1</span> / <span class="pagination-total">1</span></span>
+              <button type="button" class="btn-pagination btn-pagination-next" aria-label="Следующая страница">Вперёд →</button>
+            </div>
           </div>
           <p class="harvest-log-hint muted"></p>
         </div>
