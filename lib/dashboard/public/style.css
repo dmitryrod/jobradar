@@ -31,7 +31,7 @@ button {
 }
 
 .top {
-  padding: 1.25rem 1.5rem 0.5rem;
+  padding: 0 1rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -39,9 +39,30 @@ button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.top-row .top-heading {
+  flex-shrink: 0;
+}
+
+.top-row .tabs {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.top-row .top-actions {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .top-heading {
@@ -279,22 +300,23 @@ h1 {
 
 .tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
 }
 
 .tab {
   background: var(--panel);
   border: 1px solid var(--border);
   color: var(--muted);
-  padding: 0.35rem 0.85rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
+  white-space: nowrap;
 }
 
 .tab.active {
@@ -313,10 +335,10 @@ h1 {
 }
 
 .tab-count {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  min-width: 1.35em;
-  padding: 0.12rem 0.45rem;
+  min-width: 1.25em;
+  padding: 0.1rem 0.35rem;
   border-radius: 999px;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -346,6 +368,7 @@ h1 {
 .harvest-panel {
   margin-bottom: 1rem;
   padding: 1rem 1.1rem;
+  padding-top: 4.5rem;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -705,7 +728,7 @@ h1 {
 }
 
 #list {
-  padding: 1rem clamp(0.75rem, 2vw, 1.5rem) 2rem;
+  padding: 4.5rem clamp(0.75rem, 2vw, 1.5rem) 2rem;
   max-width: none;
   width: 100%;
   box-sizing: border-box;
@@ -1098,6 +1121,11 @@ h1 {
   margin: 0.45rem 0 0.15rem;
 }
 
+.btn-pending-cover--wide {
+  flex: 1 1 auto;
+  min-width: 10rem;
+}
+
 .pending-top-actions[hidden] {
   display: none !important;
 }
@@ -1431,6 +1459,11 @@ h1 {
   align-items: center;
 }
 
+/* Кнопка обновления черновика в модальном окне — выравнивание как у других icon-btn */
+.modal-draft-actions .btn-refresh-draft {
+  margin-right: auto;
+}
+
 .modal-approved-text {
   margin: 0 0 1rem;
   padding: 0.55rem 0.65rem;
@@ -1682,6 +1715,7 @@ h1 {
 .review-pending-panel {
   margin: 0 1.5rem 0.75rem;
   padding: 0.85rem 1rem;
+  padding-top: 4.5rem;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -1908,6 +1942,111 @@ h1 {
   padding: 0.35rem 0.65rem;
 }
 
+/* Disabled state for review automation when master toggle is off */
+.review-automation-collect.disabled .review-automation-fields,
+.review-automation-collect.disabled .btn-review-automation-save {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.review-automation-collect.disabled .review-automation-fields input,
+.review-automation-collect.disabled .review-automation-fields select {
+  disabled: true;
+}
+
+/* Disabled state for review-pending-toolbar */
+.review-pending-toolbar.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.review-pending-toolbar.disabled input,
+.review-pending-toolbar.disabled select,
+.review-pending-toolbar.disabled .btn-review-automation-save-pending,
+.review-pending-toolbar.disabled .btn-review-pending-batch {
+  pointer-events: none;
+}
+
+/* Master toggle row styling */
+.ra-enabled-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.harvest-settings-layout .ra-enabled-row {
+  margin-bottom: 0.35rem;
+  padding: 0.25rem 0;
+}
+
+.ra-enabled-row--pending {
+  width: 100%;
+  flex-basis: 100%;
+}
+
+.ra-enabled-label {
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: default;
+}
+
+.harvest-settings-layout .ra-enabled-label {
+  font-size: 0.76rem;
+}
+
+/* Toggle switch */
+.ra-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.ra-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ra-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background-color: var(--border);
+  border-radius: 24px;
+  transition: background-color 0.2s ease;
+}
+
+.ra-toggle-slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--panel);
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.ra-toggle input:checked + .ra-toggle-slider {
+  background-color: var(--accent);
+}
+
+.ra-toggle input:checked + .ra-toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.ra-toggle input:disabled + .ra-toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Scroll-to-top FAB */
 .scroll-to-top {
   position: fixed;
@@ -1952,9 +2091,64 @@ h1 {
 }
 
 /* Mobile adjustments */
+@media (max-width: 1100px) {
+  .top-row .tabs {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 960px) {
+  .top {
+    padding: 0 0.75rem;
+  }
+
+  .top-row {
+    padding: 0.65rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .top-heading h1 {
+    font-size: 1.15rem;
+  }
+
+  #list {
+    padding-top: 4rem;
+  }
+
+  .harvest-panel,
+  .review-pending-panel {
+    padding-top: 4rem;
+  }
+}
+
 @media (max-width: 560px) {
   .scroll-to-top {
     bottom: 1rem;
     right: 1rem;
+  }
+
+  .top {
+    padding: 0 0.5rem;
+  }
+
+  .top-row {
+    padding: 0.5rem 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .tab {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  #list {
+    padding-top: 3.5rem;
+  }
+
+  .harvest-panel,
+  .review-pending-panel {
+    padding-top: 3.5rem;
   }
 }

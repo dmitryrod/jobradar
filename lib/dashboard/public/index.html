@@ -13,6 +13,24 @@
           <h1>JobRadar</h1>
           <span id="harvest-badge" class="harvest-badge" hidden>Идёт сбор вакансий…</span>
         </div>
+        <div class="tabs vacancy-tabs">
+          <button type="button" data-tab="collect" class="tab">
+            Сбор
+            <span class="tab-count" data-tab-count="collect" aria-label="Открыто карточек (уникальных URL)">0</span>
+          </button>
+          <button type="button" data-status="pending" class="tab active">
+            На проверке
+            <span class="tab-count" data-tab-count="pending" aria-label="Вакансий на проверке">0</span>
+          </button>
+          <button type="button" data-status="approved" class="tab">
+            Подходят
+            <span class="tab-count" data-tab-count="approved" aria-label="Подходящих вакансий">0</span>
+          </button>
+          <button type="button" data-status="rejected" class="tab">
+            Отклонённые
+            <span class="tab-count" data-tab-count="rejected" aria-label="Отклонённых вакансий">0</span>
+          </button>
+        </div>
         <div class="top-actions">
           <button
             type="button"
@@ -44,24 +62,6 @@
             Лог отклика hh
           </button>
         </div>
-      </div>
-      <div class="tabs vacancy-tabs">
-        <button type="button" data-tab="collect" class="tab">
-          Сбор вакансий
-          <span class="tab-count" data-tab-count="collect" aria-label="Открыто карточек (уникальных URL)">0</span>
-        </button>
-        <button type="button" data-status="pending" class="tab active">
-          На проверке
-          <span class="tab-count" data-tab-count="pending" aria-label="Вакансий на проверке">0</span>
-        </button>
-        <button type="button" data-status="approved" class="tab">
-          Подходят
-          <span class="tab-count" data-tab-count="approved" aria-label="Подходящих вакансий">0</span>
-        </button>
-        <button type="button" data-status="rejected" class="tab">
-          Отклонённые
-          <span class="tab-count" data-tab-count="rejected" aria-label="Отклонённых вакансий">0</span>
-        </button>
       </div>
       <section id="review-pending-panel" class="review-pending-panel" hidden>
         <div class="review-pending-settings-main" aria-label="Фильтр вакансий, вкладка на проверке">
@@ -232,10 +232,14 @@
         </p>
           </div>
         <aside class="review-automation-collect" aria-label="Автоматизация по score">
-          <h3 class="review-panel-title">Автоматизация отклика</h3>
-          <p class="muted review-panel-lead">
-            Для <strong>новых</strong> карточек после сбора; сводка — на «На проверке».
-          </p>
+          <!--<h3 class="review-panel-title">Автоматизация отклика</h3>-->
+          <div class="ra-enabled-row">
+            <span class="ra-enabled-label" title="Включить или отключить автоматизацию отклика. При отключении все настройки ниже неактивны и автоматика не срабатывает.">Включить автоматизацию отклика</span>
+            <label class="ra-toggle">
+              <input type="checkbox" data-ra="reviewAutomationEnabled" />
+              <span class="ra-toggle-slider"></span>
+            </label>
+          </div>
           <div class="review-automation-fields">
             <label class="review-field">
               <span title="Порог из config/preferences.json → reviewAutomation.targetScore. Используется и для автоотклонения (score &lt; порога), и для авточерновика письма (score ≥ порога). Нужна валидная LLM-оценка, не режим skipped."
@@ -260,8 +264,8 @@
                 >Условие генерации</span
               >
               <select data-ra="coverLetterScope">
-                <option value="new_only">Только новые из harvest</option>
-                <option value="new_and_pending">Новые и ручной батч на «На проверке»</option>
+                <option value="new_only">Только новые</option>
+                <option value="new_and_pending">Новые и «На проверке»</option>
               </select>
             </label>
             <label class="review-field ra-variant-wrap" hidden>
@@ -324,7 +328,7 @@
                     <div class="model-info-panel" hidden></div>
                   </div>
                 </div>
-                <div class="score-parts"></div>
+                <!--<div class="score-parts"></div>-->
               </div>
               <a class="title-link" target="_blank" rel="noopener"></a>
             </div>
@@ -345,6 +349,7 @@
               <button type="button" class="btn btn-apply-chat" disabled title="Сначала нажмите «Подходит» в «Черновик письма»">
                 Отклик в браузере
               </button>
+              <button type="button" class="btn btn-view-approved" hidden>Письмо</button>
             </div>
             <div class="pending-top-actions" hidden>
               <button
@@ -360,16 +365,14 @@
                   />
                 </svg>
               </button>
-              <button type="button" class="btn btn-cover btn-pending-cover">Создать сопроводительное</button>
+              <button type="button" class="btn btn-cover btn-pending-cover btn-pending-cover--wide">Создать сопроводительное</button>
               <button type="button" class="cover-draft-btn" hidden>Черновик письма</button>
-              <button type="button" class="btn ok btn-pending-ok" hidden>Подходит</button>
             </div>
             <button type="button" class="btn btn-cover btn-regenerate-letter" hidden>Снова сгенерировать письмо</button>
-            <button type="button" class="btn btn-view-approved" hidden>Письмо</button>
             <div class="actions" hidden>
               <div class="pending-reject-block">
-                <textarea class="reason" rows="2" placeholder="Причина (особенно при отклонении)…"></textarea>
-                <button type="button" class="btn bad">Не подходит</button>
+                <textarea class="reason" rows="2" placeholder="Причина отклонения…"></textarea>
+                <button type="button" class="btn bad">Отклонить</button>
               </div>
             </div>
             <p class="done-reason"></p>

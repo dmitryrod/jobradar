@@ -80,7 +80,7 @@
   "reviewAutomation": {
     "targetScore": 58,
     "autoRejectBelowTarget": true,
-    "autoCoverLetterAtOrAboveTarget": false,
+    "autoCoverLetterAtOrAboveTarget": true,
     "coverLetterScope": "new_only",
     "coverLetterVariantCount": 1
   },
