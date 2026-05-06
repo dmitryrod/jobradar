@@ -1283,7 +1283,23 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 404, { error: 'Неизвестный путь API', path: pathname });
   }
 
-  const staticRel = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+  // SPA catch-all: отдаём index.html для клиентских роутов
+  const SPA_ROUTES = ['/', '/find', '/check', '/answer', '/reject'];
+  if (SPA_ROUTES.includes(pathname)) {
+    const indexPath = path.join(STATIC_DIR, 'index.html');
+    fs.readFile(indexPath, (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        res.end('Error loading index.html');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+    return;
+  }
+
+  const staticRel = pathname.replace(/^\//, '');
   let filePath = path.join(STATIC_DIR, staticRel);
   const staticRoot = path.resolve(STATIC_DIR);
   filePath = path.resolve(filePath);

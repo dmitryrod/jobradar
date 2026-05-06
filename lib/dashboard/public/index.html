@@ -14,11 +14,15 @@
           <span id="harvest-badge" class="harvest-badge" hidden>Идёт сбор вакансий…</span>
         </div>
         <div class="tabs vacancy-tabs">
+          <button type="button" data-tab="dashboard" class="tab active">
+            Главная
+            <span class="tab-count" data-tab-count="dashboard" aria-label="Общее количество вакансий">0</span>
+          </button>
           <button type="button" data-tab="collect" class="tab">
             Сбор
             <span class="tab-count" data-tab-count="collect" aria-label="Открыто карточек (уникальных URL)">0</span>
           </button>
-          <button type="button" data-status="pending" class="tab active">
+          <button type="button" data-status="pending" class="tab">
             На проверке
             <span class="tab-count" data-tab-count="pending" aria-label="Вакансий на проверке">0</span>
           </button>

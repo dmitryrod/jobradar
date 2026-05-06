@@ -2413,3 +2413,167 @@ h1 {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Dashboard Home Page Styles */
+.dashboard-home {
+  padding: 4.5rem clamp(0.75rem, 2vw, 1.5rem) 2rem;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.dashboard-title {
+  margin: 0 0 24px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  transition: box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.stat-card h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.stat-card-total .stat-value { color: var(--accent); }
+.stat-card-pending .stat-value { color: #ff9800; }
+.stat-card-approved .stat-value { color: var(--good); }
+.stat-card-rejected .stat-value { color: var(--bad); }
+
+.stat-link {
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.stat-link:hover {
+  text-decoration: underline;
+}
+
+.dashboard-section {
+  margin-bottom: 32px;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.dashboard-section h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dashboard-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-active {
+  background: var(--good);
+  box-shadow: 0 0 8px rgba(107, 207, 127, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.status-inactive {
+  background: var(--muted);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.status-text {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.status-detail {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.status-meta {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dashboard-actions .btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dashboard-actions .btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+}
+
+.dashboard-actions .btn-primary:hover {
+  background: #5aa0e6;
+}
+
+@media (max-width: 768px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stat-value {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
